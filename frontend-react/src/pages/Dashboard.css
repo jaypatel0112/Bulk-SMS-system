@@ -1,0 +1,12 @@
+.dashboard-container {
+    display: flex;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+  }
+  
+  .content-area {
+    flex-grow: 1;
+    padding: 2rem;
+    background-color: #f3f4f6;
+  }
+  

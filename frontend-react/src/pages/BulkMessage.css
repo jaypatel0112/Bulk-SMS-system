@@ -1,0 +1,52 @@
+/* Funky styling */
+.funky-dashboard {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    max-width: 600px;
+    margin: auto;
+    background: linear-gradient(135deg, #ffd3a5 0%, #fd6585 100%);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    color: #fff;
+  }
+  
+  .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  input[type="file"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+  }
+  
+  textarea {
+    height: 100px;
+  }
+  
+  button {
+    background: #333;
+    color: #fff;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.3s ease;
+  }
+  
+  button:hover {
+    background: #000;
+  }
+  
