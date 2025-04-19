@@ -83,6 +83,7 @@ router.post('/send-bulk', async (req, res) => {
     }
   });
   
+  
 
 // POST /api/message/incoming - Webhook for incoming messages
 router.post('/incoming', async (req, res) => {
@@ -95,50 +96,45 @@ router.post('/incoming', async (req, res) => {
         `INSERT INTO messages (twilio_sid, direction, status, body, from_number, to_number, sent_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
         [
-          req.body.MessageSid,  // Twilio message SID
-          'inbound',            // Direction: inbound
-          'received',           // Status: received
-          req.body.Body,       // Message body
-          req.body.From,       // Sender's phone number
-          req.body.To,         // Receiver's phone number
-          new Date(),          // Timestamp of receipt
+          req.body.MessageSid,
+          'inbound',
+          'received',
+          req.body.Body,
+          req.body.From,
+          req.body.To,
+          new Date(),
         ]
       );
   
-      // ✅ Check if it's an opt-out message
       const lowered = req.body.Body.trim().toLowerCase();
       const optOutKeywords = ['stop', 'unsubscribe', 'cancel', 'quit', 'end'];
+      const isOptOut = optOutKeywords.includes(lowered);
   
-      if (optOutKeywords.includes(lowered)) {
+      if (isOptOut) {
         const optOutCheck = await pool.query(
           `SELECT 1 FROM opt_outs WHERE phone_number = $1 LIMIT 1`,
           [req.body.From]
         );
   
         if (optOutCheck.rows.length === 0) {
-          // Ensure contact exists before proceeding
           const contactCheck = await pool.query(
             `SELECT phone_number FROM contacts WHERE phone_number = $1 LIMIT 1`,
             [req.body.From]
           );
           if (contactCheck.rows.length === 0) {
-            // Insert the contact if not found
             await pool.query(
-              `INSERT INTO contacts (phone_number)
-               VALUES ($1)`,
+              `INSERT INTO contacts (phone_number) VALUES ($1)`,
               [req.body.From]
             );
             console.log(`📱 Contact with phone number ${req.body.From} inserted.`);
           }
   
-          // Optional: link to contact if it exists
           const contact = await pool.query(
             `SELECT phone_number FROM contacts WHERE phone_number = $1 LIMIT 1`,
             [req.body.From]
           );
           const contactPhone = contact.rows.length > 0 ? contact.rows[0].phone_number : null;
   
-          // Insert into opt_outs
           await pool.query(
             `INSERT INTO opt_outs (phone_number, contact_phone, reason, opt_out_keyword, processed_in_twilio)
              VALUES ($1, $2, $3, $4, $5)`,
@@ -147,7 +143,7 @@ router.post('/incoming', async (req, res) => {
   
           console.log(`🚫 ${req.body.From} has opted out using '${lowered}'`);
   
-          // Optional: auto-reply
+          // Auto-reply
           await twilioClient.messages.create({
             to: req.body.From,
             from: req.body.To,
@@ -158,29 +154,43 @@ router.post('/incoming', async (req, res) => {
         }
       }
   
-      // ✅ Continue conversation logic regardless of opt-out
-      const conversation = await pool.query(
+      // ✅ Conversation Logic (with opt-out-aware status)
+      let conversationId = null;
+  
+      const existingConversation = await pool.query(
         `SELECT * FROM conversations WHERE contact_phone = $1 ORDER BY last_message_at DESC LIMIT 1`,
         [req.body.From]
       );
   
-      let conversationId = null;
-      if (conversation.rows.length > 0) {
-        conversationId = conversation.rows[0].id;
+      if (existingConversation.rows.length > 0) {
+        conversationId = existingConversation.rows[0].id;
+  
+        // ✅ Update status if this is an opt-out message
+        if (isOptOut) {
+          await pool.query(
+            `UPDATE conversations SET status = $1 WHERE id = $2`,
+            ['deactivated_by_user', conversationId]
+          );
+        }
+  
       } else {
+        const status = isOptOut ? 'deactivated_by_user' : 'active';
+  
         const newConversation = await pool.query(
           `INSERT INTO conversations (contact_phone, status, last_message_at)
            VALUES ($1, $2, $3) RETURNING id`,
-          [req.body.From, 'active', new Date()]
+          [req.body.From, status, new Date()]
         );
         conversationId = newConversation.rows[0].id;
       }
   
+      // ✅ Always update last_message_at
       await pool.query(
         `UPDATE conversations SET last_message_at = $1 WHERE id = $2`,
         [new Date(), conversationId]
       );
   
+      // ✅ Link message to conversation
       await pool.query(
         `UPDATE messages SET conversation_id = $1 WHERE twilio_sid = $2`,
         [conversationId, req.body.MessageSid]
@@ -193,6 +203,8 @@ router.post('/incoming', async (req, res) => {
       res.status(500).send('Server Error');
     }
   });
+  
+  
     
   
 // GET /api/message/inbound - Fetch latest incoming messages

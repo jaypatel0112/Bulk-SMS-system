@@ -62,13 +62,20 @@ CREATE TABLE campaigns (
   created_by INTEGER REFERENCES users(id)
 );
 
+
+
 -- Campaign Target Lists table
 CREATE TABLE campaign_target_lists (
   id SERIAL PRIMARY KEY,
   campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
-  contact_list_id INTEGER NOT NULL REFERENCES contact_lists(id),
-  UNIQUE(campaign_id, contact_list_id)
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  phone_number TEXT NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 -- Conversations table
 CREATE TABLE conversations (

@@ -1,17 +1,17 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import BulkMessage from './pages/BulkMessage'; // ⬅️ Add this import
+
+import Dashboard from './pages/Dashboard';// ⬅️ Add this import
+import Campaign from './pages/Campaign';
+import CampaignDetails from './pages/CampaignDetails';
+
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/bulk-message" element={<BulkMessage />} /> {/* ⬅️ Add this line */}
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/campaign" element={<Campaign />} />
+        <Route path="/campaign/:id" element={<CampaignDetails />} /> 
       </Routes>
     </Router>
   );

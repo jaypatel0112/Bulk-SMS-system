@@ -11,7 +11,7 @@ const Sidebar = () => {
           <Link to="/">🏠 Home</Link>
         </li>
         <li>
-          <Link to="/bulk-message">📨 Bulk Message</Link>
+          <Link to="/Campaign">📨 Create Campaign</Link>
         </li>
       </ul>
     </div>
