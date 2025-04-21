@@ -1,12 +1,63 @@
 import express from 'express';
 import { pool } from '../index.js';
 import axios from 'axios';
+import cron from 'node-cron';
 
 const router = express.Router();
 
+const apiBaseUrl = process.env.BASE_API_URL;
+
+// ✅ GET /api/campaign - Fetch all campaigns for Dashboard
+router.get("/", async (req, res) => {
+    try {
+      const result = await pool.query(
+        `SELECT id, name AS campaign_name, created_at FROM campaigns ORDER BY created_at DESC`
+      );
+      res.json(result.rows);
+    } catch (err) {
+      console.error("❌ Error fetching campaigns:", err.message);
+      res.status(500).json({ error: "Internal server error while fetching campaigns" });
+    }
+  });
+
+// ✅ GET /api/campaign/:id - Fetch campaign details and contacts
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Get campaign basic info
+        const campaignResult = await pool.query(
+            `SELECT id, name as campaign_name, sender_phone_number, created_at, message_template 
+             FROM campaigns WHERE id = $1`,
+            [id]
+        );
+
+        if (campaignResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Campaign not found' });
+        }
+
+        const campaign = campaignResult.rows[0];
+
+        // Get campaign contacts
+        const contactsResult = await pool.query(
+            `SELECT first_name, last_name, phone_number 
+             FROM campaign_target_lists WHERE campaign_id = $1`,
+            [id]
+        );
+
+        campaign.contacts = contactsResult.rows;
+
+        res.json(campaign);
+    } catch (error) {
+        console.error("❌ Error fetching campaign details:", error.message);
+        res.status(500).json({ error: 'Internal server error while fetching campaign details' });
+    }
+});
+
+
 // ✅ POST /api/campaign/upload - Upload a campaign and send messages
 router.post('/upload', async (req, res) => {
-    const { campaign_name, sender_id, message_template, contacts } = req.body;
+    const { campaign_name, sender_id, message_template, contacts, scheduled_at } = req.body;
 
     console.log("Received data:", req.body);
 
@@ -19,11 +70,11 @@ router.post('/upload', async (req, res) => {
     }
 
     try {
-        // 1. Insert campaign
+        // 1. Insert campaign, use null for scheduled_at if not provided
         const result = await pool.query(
-            `INSERT INTO campaigns (name, created_at, sender_phone_number, message_template) 
-             VALUES ($1, $2, $3, $4) RETURNING id`,
-            [campaign_name, new Date(), sender_id, message_template]
+            `INSERT INTO campaigns (name, created_at, sender_phone_number, message_template, scheduled_at) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [campaign_name, new Date(), sender_id, message_template, scheduled_at || null]
         );
         const campaignId = result.rows[0].id;
         console.log("Inserted campaign ID:", campaignId);
@@ -49,74 +100,70 @@ router.post('/upload', async (req, res) => {
             );
         }
 
-        // 3. Call internal bulk message API
-        const bulkMessageData = {
-            message: message_template,
-            twilioNumber: sender_id,
-            contacts: personalizedMessages,
-        };
+        // 3. If scheduled_at is provided, schedule the campaign
+        if (scheduled_at) {
+            const cronTime = new Date(scheduled_at);  // Convert scheduled time to Date
+            const cronExpression = `0 ${cronTime.getMinutes()} ${cronTime.getHours()} ${cronTime.getDate()} ${cronTime.getMonth() + 1} *`;  // Cron expression format
 
-        try {
-            const response = await axios.post('http://localhost:5000/api/message/send-bulk', bulkMessageData);
-            console.log("Bulk message response:", response.data);
-        } catch (error) {
-            console.error("Error sending bulk messages:", error.response?.data || error.message);
-            return res.status(500).json({ error: 'Internal server error while sending messages' });
+            cron.schedule(cronExpression, async () => {
+                try {
+                    // Fetch the campaign details from the database
+                    const result = await pool.query(
+                        `SELECT * FROM campaigns WHERE id = $1`,
+                        [campaignId]
+                    );
+                    const campaign = result.rows[0];
+
+                    if (!campaign) {
+                        console.error('❌ Campaign not found');
+                        return;
+                    }
+
+                    // Fetch the target contacts for the campaign
+                    const contactsResult = await pool.query(
+                        `SELECT * FROM campaign_target_lists WHERE campaign_id = $1`,
+                        [campaignId]
+                    );
+                    const contacts = contactsResult.rows;
+
+                    // Send the campaign messages
+                    const bulkMessageData = {
+                        message: campaign.message_template,
+                        twilioNumber: campaign.sender_phone_number,
+                        contacts: contacts,
+                    };
+
+                    try {
+                        const response = await axios.post(`${apiBaseUrl}/api/message/send-bulk`, bulkMessageData);
+                        console.log("Scheduled campaign sent:", response.data);
+                    } catch (error) {
+                        console.error("Error sending scheduled campaign:", error.response?.data || error.message);
+                    }
+                } catch (error) {
+                    console.error("Error scheduling campaign:", error.message);
+                }
+            });
+        } else {
+            // If no schedule time, send immediately
+            const bulkMessageData = {
+                message: message_template,
+                twilioNumber: sender_id,
+                contacts: personalizedMessages,
+            };
+
+            try {
+                const response = await axios.post(`${apiBaseUrl}/api/message/send-bulk`, bulkMessageData);
+                console.log("Bulk message response:", response.data);
+            } catch (error) {
+                console.error("Error sending bulk messages:", error.response?.data || error.message);
+                return res.status(500).json({ error: 'Internal server error while sending messages' });
+            }
         }
 
-        res.json({ success: true, message: 'Campaign launched successfully', campaignId });
+        res.json({ success: true, message: scheduled_at ? 'Campaign scheduled successfully' : 'Campaign launched successfully', campaignId });
     } catch (err) {
         console.error('❌ Error uploading campaign:', err.message);
-        res.status(500).json({ error: 'Failed to upload campaign' });
-    }
-});
-
-// ✅ GET /api/campaign - Fetch all campaigns
-router.get('/', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT id, name AS campaign_name, sender_phone_number, created_at 
-            FROM campaigns 
-            ORDER BY created_at DESC
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching campaigns:', err.message);
-        res.status(500).json({ error: 'Failed to fetch campaigns' });
-    }
-});
-
-// ✅ GET /api/campaign/:id - Fetch campaign details with message and contacts
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const result = await pool.query(`
-            SELECT c.id AS campaign_id, c.name AS campaign_name, c.sender_phone_number, c.created_at,  c.message_template,
-                   COALESCE(json_agg(
-                       json_build_object(
-                           'first_name', cc.first_name,
-                           'last_name', cc.last_name,
-                           'phone_number', cc.phone_number,
-                           'message', cc.message,
-                           'sender_phone_number', cc.sender_phone_number,
-                           'created_at', cc.created_at
-                       )
-                   ) FILTER (WHERE cc.id IS NOT NULL), '[]') AS contacts
-            FROM campaigns c
-            LEFT JOIN campaign_target_lists cc ON c.id = cc.campaign_id
-            WHERE c.id = $1
-            GROUP BY c.id
-        `, [id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Campaign not found' });
-        }
-
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error fetching campaign details:', err.message);
-        res.status(500).json({ error: 'Failed to fetch campaign details' });
+        res.status(500).json({ error: 'Internal server error while uploading campaign' });
     }
 });
 

@@ -1,45 +1,48 @@
+// src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import "./Dashboard.css";
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
 
   useEffect(() => {
-    // Replace with your local URL
-    axios.get("http://localhost:5000/api/campaign")
+    axios
+      .get(`${API_URL}/api/campaign`, {
+        headers: { "ngrok-skip-browser-warning": "true" },
+      })
       .then((res) => setCampaigns(res.data))
       .catch((err) => console.error("Error fetching campaigns", err));
   }, []);
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-wrapper">
       <Sidebar />
-      <div className="content-area">
-        <h1>Welcome to the Funky Dashboard 🎉</h1>
-        <p>Your sent campaigns:</p>
-        {campaigns.map((camp) => (
-          <div 
-            key={camp.id}
-            className="campaign-card"
-            onClick={() => navigate(`/campaign/${camp.id}`)}
-            style={{
-              cursor: "pointer",
-              padding: "1rem",
-              border: "1px solid #ccc",
-              borderRadius: "10px",
-              marginBottom: "1rem",
-              backgroundColor: "#f7f7f7"
-            }}
-          >
-            <h3>{camp.campaign_name}</h3>
-            <p>Sender: {camp.sender_id}</p>
-            <small>Click for details ➡️</small>
+      <div className="dashboard-main">
+        <div className="dashboard-header">
+          <h2>📣 Campaigns</h2>
+        </div>
+
+        <div className="dashboard-content">
+          <div className="campaigns-container">
+            {campaigns.map((camp) => (
+              <div
+                key={camp.id}
+                className="campaign-card"
+                onClick={() => navigate(`/campaign/${camp.id}`)}
+              >
+                <h3>{camp.campaign_name}</h3>
+
+                <small>📅 Created: {new Date(camp.created_at).toLocaleDateString()}</small>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

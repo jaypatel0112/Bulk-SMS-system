@@ -13,6 +13,9 @@ const Sidebar = () => {
         <li>
           <Link to="/Campaign">📨 Create Campaign</Link>
         </li>
+        <li>
+          <Link to="/Inbox">💬 Inbox</Link>
+        </li>
       </ul>
     </div>
   );

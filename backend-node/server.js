@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import messageRoutes from './routes/message.js';
 import campaignRoutes from './routes/campaign.js';
+import conversationRoutes from './routes/conversation.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());                         // for JSON payloads
 // Routes
 app.use('/api/message', messageRoutes);
 app.use('/api/campaign', campaignRoutes);
+app.use('/api/conversations', conversationRoutes);
 
 // DB
 import { pool } from './index.js';

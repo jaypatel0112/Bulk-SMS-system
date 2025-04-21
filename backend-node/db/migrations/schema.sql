@@ -76,7 +76,6 @@ CREATE TABLE campaign_target_lists (
 );
 
 
-
 -- Conversations table
 CREATE TABLE conversations (
   id SERIAL PRIMARY KEY,

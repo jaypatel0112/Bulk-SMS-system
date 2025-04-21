@@ -1,0 +1,104 @@
+.dashboard-wrapper {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .dashboard-main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  
+  .dashboard-header {
+    margin-bottom: 1.5rem;
+  }
+  
+  .campaign-form input,
+  .campaign-form textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  
+  .campaign-form button {
+    padding: 0.6rem 1.2rem;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .inline-preview {
+    margin-top: 1rem;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .inline-preview-box {
+    background-color: #f2f2f2;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 8px;
+    white-space: pre-line;
+  }
+  
+  .preview-footer {
+    color: #888;
+    display: block;
+    margin-top: 0.5rem;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  
+  .preview-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90%;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .vars-dropdown {
+    list-style: none;
+    padding: 0;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    background: white;
+    width: 200px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: absolute;
+    z-index: 100;
+  }
+  
+  .vars-dropdown li {
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  
+  .vars-dropdown li:hover {
+    background-color: #f0f0f0;
+  }
+  
