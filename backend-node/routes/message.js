@@ -2,43 +2,100 @@ import express from 'express';
 import twilio from 'twilio';
 import { pool } from '../index.js';
 import dotenv from 'dotenv';
+import format from 'pg-format';
 
 dotenv.config();
 const router = express.Router();
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// POST /api/message/send-bulk
 router.post('/send-bulk', async (req, res) => {
-  const { message, twilioNumber, contacts } = req.body;
+  const { message, twilioNumber, contacts, campaign_id } = req.body;
   const userId = req.user?.id || null;
 
   try {
-    for (const contact of contacts) {
-      const { phone_number, first_name, last_name } = contact;
+    // 1. Get current columns in contacts table
+    const columnRes = await pool.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'contacts'
+    `);
+    const existingColumns = columnRes.rows.map(r => r.column_name);
 
-      
+    // 2. Determine missing columns from contacts
+    const allKeys = new Set();
+    contacts.forEach(contact => {
+      Object.keys(contact).forEach(key => allKeys.add(key));
+    });
+
+    const missingColumns = [...allKeys].filter(key =>
+      !existingColumns.includes(key)
+    );
+
+    // 3. Alter table to add missing columns as TEXT
+    for (const col of missingColumns) {
+      const safeCol = col.replace(/[^a-zA-Z0-9_]/g, ''); // sanitize
+      await pool.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ${safeCol} TEXT`);
+    }
+
+    for (const contact of contacts) {
+      const { phone_number } = contact;
 
       const optedOut = await pool.query(`SELECT 1 FROM opt_outs WHERE phone_number = $1 LIMIT 1`, [phone_number]);
       if (optedOut.rows.length > 0) continue;
 
-      const contactExists = await pool.query(`SELECT 1 FROM contacts WHERE phone_number = $1 LIMIT 1`, [phone_number]);
+      // 4. Check if contact exists
+      const contactExists = await pool.query(
+        `SELECT 1 FROM contacts WHERE phone_number = $1 LIMIT 1`, [phone_number]
+      );
+
+      // 5. Insert if doesn't exist
       if (contactExists.rows.length === 0) {
+        const keys = Object.keys(contact);
+        const values = Object.values(contact);
+
+        // Ensure that missing columns are included in the INSERT statement
+        const cols = keys.map(k => `"${k}"`).join(", ");
+        const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
+
+        // Inserting the contact into the contacts table with missing column values
         await pool.query(
-          `INSERT INTO contacts (phone_number, first_name, last_name) VALUES ($1, $2, $3)`,
-          [phone_number, first_name, last_name]
+          `INSERT INTO contacts (${cols}) VALUES (${placeholders})`, values
+        );
+      } else {
+        // If the contact exists, you can optionally update it if necessary
+        const updateKeys = Object.keys(contact);
+        const updateValues = Object.values(contact);
+        const updateSet = updateKeys.map((key, index) => `"${key}" = $${index + 1}`).join(", ");
+
+        await pool.query(
+          `UPDATE contacts SET ${updateSet} WHERE phone_number = $${updateKeys.length + 1}`,
+          [...updateValues, contact.phone_number]
         );
       }
 
+      // 6. Personalized message
       const personalizedMessage = message
-        .replace('${first_name}', first_name || '')
-        .replace('${last_name}', last_name || '');
+        .replace('${first_name}', contact.first_name || '')
+        .replace('${last_name}', contact.last_name || '');
 
-      const messageSent = await twilioClient.messages.create({
-        body: personalizedMessage,
-        from: twilioNumber,
-        to: phone_number,
-      });
-      
+      let messageSent;
+      try {
+        messageSent = await twilioClient.messages.create({
+          body: personalizedMessage,
+          from: twilioNumber,
+          to: phone_number,
+          statusCallback: `${process.env.BASE_API_URL}/api/message/status`,
+        });
+      } catch (twilioError) {
+        console.error(`❌ Error sending to ${phone_number}:`, twilioError.message);
+        if (campaign_id) {
+          await pool.query(
+            `UPDATE campaigns SET failed = COALESCE(failed, 0) + 1 WHERE id = $1`, [campaign_id]
+          );
+        }
+        continue;
+      }
+
+      // 7. Handle conversation/message
       const conversation = await pool.query(
         `SELECT id FROM conversations WHERE contact_phone = $1 ORDER BY last_message_at DESC LIMIT 1`,
         [phone_number]
@@ -56,8 +113,8 @@ router.post('/send-bulk', async (req, res) => {
       }
 
       await pool.query(
-        `INSERT INTO messages (twilio_sid, direction, status, body, from_number, to_number, sent_at, user_id, conversation_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        `INSERT INTO messages (twilio_sid, direction, status, body, from_number, to_number, sent_at, user_id, conversation_id, campaign_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           messageSent.sid,
           'outbound',
@@ -68,6 +125,7 @@ router.post('/send-bulk', async (req, res) => {
           new Date(),
           userId,
           conversationId,
+          campaign_id,
         ]
       );
 
@@ -84,7 +142,7 @@ router.post('/send-bulk', async (req, res) => {
   }
 });
 
-// POST /api/message/incoming - Twilio webhook
+// POST /api/message/incoming
 router.post('/incoming', async (req, res) => {
   try {
     const { MessageSid, Body, From, To } = req.body;
@@ -93,14 +151,12 @@ router.post('/incoming', async (req, res) => {
     const optOutKeywords = ['stop', 'unsubscribe', 'cancel', 'quit', 'end'];
     const isOptOut = optOutKeywords.includes(lowered);
 
-    // ✅ Normalize phone number (remove '+') for internal DB use
     const normalizedFrom = From.startsWith('+') ? From.slice(1) : From;
 
-    // Store raw From and To, but use normalizedFrom for conversation/opt-out logic
     const messageInsert = await pool.query(
       `INSERT INTO messages (twilio_sid, direction, status, body, from_number, to_number, sent_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [MessageSid, 'inbound', 'received', Body, From, To, new Date()] // From is stored raw (with +)
+      [MessageSid, 'inbound', 'received', Body, From, To, new Date()]
     );
 
     let conversationId = null;
@@ -163,6 +219,7 @@ router.post('/incoming', async (req, res) => {
       }
     }
 
+    res.sendStatus(200);
   } catch (error) {
     console.error('Incoming message error:', error);
     res.sendStatus(500);
@@ -206,7 +263,6 @@ router.get('/conversations', async (req, res) => {
   }
 });
 
-// ✅ NEW: Get messages in a conversation
 // GET /api/conversations/:id/messages
 router.get('/conversations/:id/messages', async (req, res) => {
   const conversationId = req.params.id;
@@ -216,7 +272,7 @@ router.get('/conversations/:id/messages', async (req, res) => {
         id,
         body,
         sent_at,
-        direction,  -- Explicitly selecting direction
+        direction,
         from_number,
         to_number,
         status
@@ -226,10 +282,8 @@ router.get('/conversations/:id/messages', async (req, res) => {
       [conversationId]
     );
 
-    // Transform the messages to ensure consistent direction format
     const formattedMessages = result.rows.map(msg => ({
       ...msg,
-      // Ensure direction is consistent with frontend expectations
       direction: msg.direction === 'outbound' ? 'outgoing' : 'incoming'
     }));
 
@@ -240,18 +294,15 @@ router.get('/conversations/:id/messages', async (req, res) => {
   }
 });
 
-// ✅ NEW: Send message to a contact (chat)
 // POST /api/message/reply
 router.post('/reply', async (req, res) => {
-  const { to, from, body } = req.body; // Make sure from is passed in the request body
+  const { to, from, body } = req.body;
   const userId = req.user?.id || null;
 
-  // Ensure both 'to' and 'body' are provided
   if (!to || !body) {
     return res.status(400).json({ error: "'to' and 'body' are required" });
   }
 
-  // Ensure 'from' is provided, if not use a fallback to MessagingServiceSid (if available)
   const fromNumber = from || process.env.TWILIO_MESSAGING_SERVICE_SID;
 
   if (!fromNumber) {
@@ -259,31 +310,28 @@ router.post('/reply', async (req, res) => {
   }
 
   try {
-    // Send the message using Twilio
     const sentMsg = await twilioClient.messages.create({
       to,
-      from: fromNumber,  // Ensure 'from' or 'MessagingServiceSid' is provided
+      from: fromNumber,
       body,
     });
 
-    // Check if the conversation exists, if not, create it
     const conversation = await pool.query(
       `SELECT id FROM conversations WHERE contact_phone = $1 ORDER BY last_message_at DESC LIMIT 1`,
-      [to]
+      [to.startsWith('+') ? to.slice(1) : to]
     );
 
-    let conversationId = null;
-    if (conversation.rows.length > 0) {
-      conversationId = conversation.rows[0].id;
-    } else {
+    let conversationId = conversation.rows.length ? conversation.rows[0].id : null;
+
+    if (!conversationId) {
       const newConv = await pool.query(
-        `INSERT INTO conversations (contact_phone, status, last_message_at) VALUES ($1, $2, $3) RETURNING id`,
-        [to, 'active', new Date()]
+        `INSERT INTO conversations (contact_phone, status, last_message_at)
+         VALUES ($1, $2, $3) RETURNING id`,
+        [to.startsWith('+') ? to.slice(1) : to, 'active', new Date()]
       );
       conversationId = newConv.rows[0].id;
     }
 
-    // Insert the sent message into the database
     await pool.query(
       `INSERT INTO messages (twilio_sid, direction, status, body, from_number, to_number, sent_at, user_id, conversation_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -292,7 +340,7 @@ router.post('/reply', async (req, res) => {
         'outbound',
         sentMsg.status,
         body,
-        from,
+        fromNumber,
         to,
         new Date(),
         userId,
@@ -300,19 +348,16 @@ router.post('/reply', async (req, res) => {
       ]
     );
 
-    // Update the last message timestamp for the conversation
     await pool.query(
       `UPDATE conversations SET last_message_at = $1 WHERE id = $2`,
       [new Date(), conversationId]
     );
 
-    res.json({ message: 'Message sent', sid: sentMsg.sid });
+    res.json({ message: 'Message sent successfully', sid: sentMsg.sid });
   } catch (err) {
     console.error('❌ Error sending message:', err.message);
     res.status(500).json({ error: 'Failed to send message' });
   }
 });
-
-
 
 export default router;

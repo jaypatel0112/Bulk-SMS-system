@@ -20,39 +20,61 @@ router.get("/", async (req, res) => {
     }
   });
 
-// ✅ GET /api/campaign/:id - Fetch campaign details and contacts
-router.get('/:id', async (req, res) => {
+  //GET /api/campaign/:id - Fetch campaign details by ID
+  router.get('/:id', async (req, res) => {
     const { id } = req.params;
-
+  
     try {
-        // Get campaign basic info
-        const campaignResult = await pool.query(
-            `SELECT id, name as campaign_name, sender_phone_number, created_at, message_template 
-             FROM campaigns WHERE id = $1`,
-            [id]
-        );
-
-        if (campaignResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Campaign not found' });
-        }
-
-        const campaign = campaignResult.rows[0];
-
-        // Get campaign contacts
-        const contactsResult = await pool.query(
-            `SELECT first_name, last_name, phone_number 
-             FROM campaign_target_lists WHERE campaign_id = $1`,
-            [id]
-        );
-
-        campaign.contacts = contactsResult.rows;
-
-        res.json(campaign);
+      // 1. Get campaign basic info
+      const campaignResult = await pool.query(
+        `SELECT id, name as campaign_name, sender_phone_number, created_at, message_template 
+         FROM campaigns WHERE id = $1`,
+        [id]
+      );
+  
+      if (campaignResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Campaign not found' });
+      }
+  
+      const campaign = campaignResult.rows[0];
+  
+      // 2. Get the campaign's message status counts directly from the database
+      const statusResult = await pool.query(
+        `SELECT delivered, failed, queued
+         FROM campaigns 
+         WHERE id = $1`,
+        [id]
+      );
+  
+      const statusCounts = statusResult.rows[0];
+  
+      // 3. Get campaign contacts
+      const contactsResult = await pool.query(
+        `SELECT first_name, last_name, phone_number 
+         FROM campaign_target_lists WHERE campaign_id = $1`,
+        [id]
+      );
+      campaign.contacts = contactsResult.rows;
+  
+      // 4. Get all messages for the campaign
+      const messagesResult = await pool.query(
+        `SELECT * FROM messages WHERE campaign_id = $1`,
+        [id]
+      );
+      campaign.messages = messagesResult.rows;
+  
+      // 5. Send response with campaign data, status counts, and messages
+      res.json({
+        ...campaign,
+        report: statusCounts, // Include the status counts in the response
+        messages: campaign.messages,
+      });
+  
     } catch (error) {
-        console.error("❌ Error fetching campaign details:", error.message);
-        res.status(500).json({ error: 'Internal server error while fetching campaign details' });
+      console.error("❌ Error fetching campaign details:", error.message);
+      res.status(500).json({ error: 'Internal server error while fetching campaign details' });
     }
-});
+  });
 
 
 // ✅ POST /api/campaign/upload - Upload a campaign and send messages
@@ -131,6 +153,7 @@ router.post('/upload', async (req, res) => {
                         message: campaign.message_template,
                         twilioNumber: campaign.sender_phone_number,
                         contacts: contacts,
+                        campaign_id: campaignId
                     };
 
                     try {
@@ -149,6 +172,7 @@ router.post('/upload', async (req, res) => {
                 message: message_template,
                 twilioNumber: sender_id,
                 contacts: personalizedMessages,
+                campaign_id: campaignId
             };
 
             try {
@@ -166,5 +190,10 @@ router.post('/upload', async (req, res) => {
         res.status(500).json({ error: 'Internal server error while uploading campaign' });
     }
 });
+
+
+  
+
+
 
 export default router;
