@@ -1,13 +1,15 @@
-// ✅ FRONTEND - Campaign.js
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../components/Sidebar';
 import './Campaign.css';
 
 const Campaign = () => {
+  const { email } = useParams();
+  const navigate = useNavigate();
   const [csvFile, setCsvFile] = useState(null);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [message, setMessage] = useState('');
@@ -19,21 +21,80 @@ const Campaign = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showVars, setShowVars] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [assignedNumbers, setAssignedNumbers] = useState([]);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
   const messageRef = useRef(null);
-
-  const twilioNumbers = [
-    { number: '+12244452202', label: 'Primary Number' },
-    { number: '+19876543210', label: 'Backup Number' },
-    { number: '+11234567890', label: 'Marketing Line' },
-  ];
 
   const MAX_CHAR_LIMIT = 160;
   const RESERVED_STOP_LENGTH = 20;
 
+  useEffect(() => {
+    if (!email) {
+      navigate('/login');
+    } else {
+      fetchUserData();
+    }
+  }, [email, navigate]);
+
+  const fetchUserData = async () => {
+    setIsLoadingUserData(true);
+    try {
+      // First get user role
+      const roleResponse = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`,
+        {
+          headers: { "ngrok-skip-browser-warning": "true" },
+          params: { email }
+        }
+      );
+
+      const role = roleResponse.data.role;
+
+    // If role is 1 (admin) or user_id is null (admin condition), show the textbox
+    if (role === 1 || roleResponse.data.user_id === null) {
+      setUserRole('admin');
+    } else {
+      setUserRole('user');
+    }
+
+    // Get assigned numbers for non-admin users
+    if (role !== 1) {
+      const numbersResponse = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
+        {
+          headers: { "ngrok-skip-browser-warning": "true" },
+          params: { email }
+        }
+      );
+
+      // Handle both response formats
+      let numbers = [];
+
+      if (Array.isArray(numbersResponse.data.numbers)) {
+        numbers = numbersResponse.data.numbers;
+      } else if (Array.isArray(numbersResponse.data)) {
+        numbers = numbersResponse.data;
+      }
+
+      setAssignedNumbers(numbers);
+      
+      // Auto-select the first number if available
+      if (numbers.length > 0) {
+        setTwilioNumber(numbers[0]);
+      }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Failed to load user information');
+    } finally {
+      setIsLoadingUserData(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    if (file.type !== 'text/csv') {
+    if (!file || file.type !== 'text/csv') {
       setFeedbackMsg({ type: 'error', text: 'Please upload a valid CSV file.' });
       return;
     }
@@ -44,17 +105,16 @@ const Campaign = () => {
       skipEmptyLines: true,
       complete: (results) => {
         const headers = Object.keys(results.data[0] || {});
-        const normalizedData = results.data.map((row) => {
-          const normalized = {};
+        const normalized = results.data.map(row => {
+          const obj = {};
           headers.forEach(h => {
             const key = h.trim().toLowerCase().replace(/\s+/g, '_');
-            normalized[key] = row[h]?.trim();
+            obj[key] = row[h]?.trim();
           });
-          return normalized;
+          return obj;
         });
-
         setCsvHeaders(headers);
-        setContacts(normalizedData);
+        setContacts(normalized);
         setFeedbackMsg({ type: 'success', text: 'CSV file loaded successfully.' });
       },
       error: (err) => {
@@ -64,67 +124,9 @@ const Campaign = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const STOP_TEXT = ' STOP to opt out.';
-    const updatedMessage = message + STOP_TEXT;
-
-    if (!csvFile || !updatedMessage || !twilioNumber || !campaignName || contacts.length === 0) {
-      toast.error('Please fill in all fields and upload a CSV with valid contacts.', {
-        position: "top-right",
-        autoClose: 5000,
-      });
-      return;
-    }
-
-    if (message.length > MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH) {
-      toast.error(`Message too long! Max allowed is ${MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH} characters.`, {
-        position: "top-right",
-        autoClose: 5000,
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    setFeedbackMsg(null);
-
-    const payload = {
-      campaign_name: campaignName,
-      sender_id: twilioNumber,
-      message_template: updatedMessage,
-      contacts,
-      scheduled_at: scheduledAt || null
-    };
-
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/campaign/upload`, payload);
-      toast.success('🚀 Campaign launched successfully!', {
-        position: "top-right",
-        autoClose: 5000,
-      });
-      // Clear form after successful submission
-      setCampaignName('');
-      setMessage('');
-      setCsvFile(null);
-      setContacts([]);
-      setCsvHeaders([]);
-    } catch (err) {
-      console.error(err);
-      toast.error('Campaign launch failed. Please try again.', {
-        position: "top-right",
-        autoClose: 5000,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-};
-
   const handleInsertVariable = (variable) => {
     const cursorPos = messageRef.current.selectionStart;
-    const newMessage =
-      message.substring(0, cursorPos) +
-      `\${${variable}}` +
-      message.substring(cursorPos);
+    const newMessage = `${message.slice(0, cursorPos)}\${${variable}}${message.slice(cursorPos)}`;
     setMessage(newMessage);
     setShowVars(false);
 
@@ -135,17 +137,105 @@ const Campaign = () => {
     }, 0);
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const STOP_TEXT = ' STOP to opt out.';
+    const updatedMessage = message + STOP_TEXT;
+
+    if (!csvFile || !updatedMessage || !twilioNumber || !campaignName || contacts.length === 0) {
+      toast.error('Please fill in all fields and upload a CSV with valid contacts.');
+      return;
+    }
+
+    if (message.length > MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH) {
+      toast.error(`Message too long! Max allowed is ${MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH} characters.`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    const payload = {
+      campaign_name: campaignName,
+      sender_id: twilioNumber,
+      message_template: updatedMessage,
+      contacts,
+      scheduled_at: scheduledAt || null,
+      user_email: decodeURIComponent(email),
+      user_role: userRole
+    };
+
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/campaign/upload`, payload);
+      toast.success('🚀 Campaign launched successfully!');
+      setTimeout(() => {
+        navigate(`/dashboard/${email}`);
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Campaign launch failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderSenderNumberInput = () => {
+    if (isLoadingUserData) {
+      return <div className="loading-numbers">Loading sender options...</div>;
+    }
+
+    if (userRole === 'admin') {
+      return (
+        <input
+          type="text"
+          value={twilioNumber}
+          onChange={(e) => setTwilioNumber(e.target.value)}
+          placeholder="Enter any Twilio number (e.g., +12223334444)"
+          required
+          className="form-control"
+        />
+      );
+    }
+
+    if (assignedNumbers.length > 0) {
+      return (
+        <select
+          value={twilioNumber}
+          onChange={(e) => setTwilioNumber(e.target.value)}
+          required
+          className="form-control"
+        >
+          {assignedNumbers.map((number, index) => (
+            <option key={index} value={number}>
+              {number}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        value="No numbers assigned - contact admin"
+        disabled
+        className="form-control disabled-input"
+      />
+    );
+  };
 
   return (
     <div className="dashboard-wrapper">
-      <Sidebar />
+      <Sidebar email={decodeURIComponent(email)} />
       <div className="dashboard-main">
         <div className="dashboard-header">
           <h2>📢 Launch SMS Campaign</h2>
+          <p className="user-email">Logged in as: {decodeURIComponent(email)}</p>
+          {userRole && (
+            <p className="user-role">Role: {userRole === 'admin' ? 'Administrator' : 'Standard User'}</p>
+          )}
         </div>
         <div className="dashboard-content">
           <form onSubmit={handleSubmit} className="campaign-form">
-            {/* Left Section - Campaign Details */}
+            {/* Left Section */}
             <div className="form-left-section">
               <div className="form-group">
                 <label>Campaign Name</label>
@@ -155,6 +245,7 @@ const Campaign = () => {
                   onChange={(e) => setCampaignName(e.target.value)}
                   placeholder="Enter campaign name"
                   required
+                  className="form-control"
                 />
               </div>
 
@@ -164,23 +255,13 @@ const Campaign = () => {
                   type="datetime-local"
                   value={scheduledAt}
                   onChange={(e) => setScheduledAt(e.target.value)}
+                  className="form-control"
                 />
               </div>
 
               <div className="form-group">
                 <label>Sender Number</label>
-                <select
-                  value={twilioNumber}
-                  onChange={(e) => setTwilioNumber(e.target.value)}
-                  required
-                >
-                  <option value="">Select a Twilio Number</option>
-                  {twilioNumbers.map((twilio) => (
-                    <option key={twilio.number} value={twilio.number}>
-                      {twilio.label} ({twilio.number})
-                    </option>
-                  ))}
-                </select>
+                {renderSenderNumberInput()}
               </div>
 
               <div className="form-group message-section">
@@ -193,6 +274,7 @@ const Campaign = () => {
                     placeholder="Hi ${first_name}, you're awesome! 🎉"
                     maxLength={MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH}
                     required
+                    className="form-control"
                   />
                   <div className="message-controls">
                     <div className="char-counter">
@@ -211,7 +293,7 @@ const Campaign = () => {
                   </div>
                   {showVars && (
                     <ul className="vars-dropdown">
-                      {csvHeaders.map((header) => (
+                      {csvHeaders.map(header => (
                         <li key={header} onClick={() => handleInsertVariable(header)}>
                           ${header}
                         </li>
@@ -222,7 +304,7 @@ const Campaign = () => {
               </div>
             </div>
 
-            {/* Right Section - File Upload */}
+            {/* Right Section */}
             <div className="form-right-section">
               <div className="file-upload-container">
                 <label>Contact List (CSV)</label>
@@ -257,7 +339,7 @@ const Campaign = () => {
                 <button
                   type="submit"
                   className="button button-primary"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || (userRole !== 'admin' && assignedNumbers.length === 0)}
                 >
                   {isSubmitting ? '🔄 Sending...' : '🚀 Launch Campaign'}
                 </button>
@@ -274,7 +356,7 @@ const Campaign = () => {
         </div>
       </div>
 
-      {/* Preview Modal */}
+      {/* Message Preview Modal */}
       {showPreview && (
         <div className="preview-modal" onClick={() => setShowPreview(false)}>
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
@@ -289,6 +371,7 @@ const Campaign = () => {
           </div>
         </div>
       )}
+
       <ToastContainer />
     </div>
   );

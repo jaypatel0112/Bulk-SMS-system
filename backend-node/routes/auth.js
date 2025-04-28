@@ -60,37 +60,36 @@ router.post('/signup', async (req, res) => {
 
 // Login route
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    // Fetch user from DB based on username (email)
-    const result = await query('SELECT * FROM employees WHERE username = $1', [username]);
-    const user = result.rows[0];
-
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
+    const { username, password } = req.body;
+  
+    try {
+      const result = await query('SELECT * FROM employees WHERE username = $1', [username]);
+      const user = result.rows[0];
+  
+      if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+  
+      if (user.password !== password) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+      }
+  
+      // 👇 Send back user info including user_id
+      return res.status(200).json({
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          user_id: user.user_id, // 👈 this is what you'll use for future queries
+          username: user.username,
+          role: user.role,
+        },
+      });
+  
+    } catch (error) {
+      console.error('Error during login:', error);
+      return res.status(500).json({ message: 'Server error' });
     }
-
-    // Direct password comparison (this assumes the password is stored as plain text)
-    if (user.password !== password) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // If passwords match, generate token or send success response
-    // For simplicity, we're just sending a success message here.
-    // In a real application, you'd generate a JWT token here.
-    return res.status(200).json({
-      message: 'Login successful',
-      // You can add a token here for authenticated users
-      // token: 'your-jwt-token',
-    });
-
-  } catch (error) {
-    console.error('Error during login:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
+  });
 
 
 export default router;

@@ -4,10 +4,12 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import messageRoutes from './routes/message.js';
 import campaignRoutes from './routes/campaign.js';
-import conversationRoutes from './routes/conversation.js';
 import messageStatusRoutes from './routes/status.js';
 import authRouter from './routes/auth.js';  // Import auth.js router
-
+import userRoutes from './routes/user.js';
+import twilionumberRoutes from './routes/twilionumber.js';
+import twilioRoutes from './routes/twilionumber.js';
+import inboxRoutes from './routes/inbox.js';
 
 dotenv.config();
 
@@ -22,9 +24,13 @@ app.use(express.json());                         // for JSON payloads
 // Routes
 app.use('/api/message', messageRoutes);
 app.use('/api/campaign', campaignRoutes);
-app.use('/api/conversations', conversationRoutes);
 app.use("/api/message", messageStatusRoutes);
 app.use('/api/auth', authRouter);
+app.use('/api/user', userRoutes);
+app.use('/api/twilionumber', twilionumberRoutes);
+app.use('/api/twilio-numbers', twilioRoutes);
+app.use('/api', inboxRoutes);
+
 
 
 // DB

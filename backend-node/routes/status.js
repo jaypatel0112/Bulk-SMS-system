@@ -1,11 +1,8 @@
 import express from 'express';
 import { pool } from '../index.js';
-import twilio from 'twilio';
 
 const router = express.Router();
-const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// ✅ POST /api/status - Handle Twilio status callbacks
 router.post('/status', async (req, res) => {
   const {
     MessageSid,

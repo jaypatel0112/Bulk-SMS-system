@@ -1,21 +1,69 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import "./Sidebar.css"; // Optional if you want to style it
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ email }) => {
+  const location = useLocation();
+  const [role, setRole] = useState(null);
+
+  const getEmail = () => {
+    if (email) return email;
+    const pathParts = location.pathname.split('/');
+    const dashboardIndex = pathParts.indexOf('dashboard');
+    if (dashboardIndex !== -1 && pathParts.length > dashboardIndex + 1) {
+      return decodeURIComponent(pathParts[dashboardIndex + 1]);
+    }
+    return '';
+  };
+
+  const currentEmail = getEmail();
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(currentEmail)}`,
+          {
+            headers: { "ngrok-skip-browser-warning": "true" },
+            params: { email }
+          }
+        );
+        const data = await res.json();
+        if (data.role !== undefined) {
+          setRole(data.role);
+          console.log('Fetched role:', data.role);  // <-- add this line
+        }
+      } catch (err) {
+        console.error('Failed to fetch role:', err);
+      }
+    };
+
+    if (currentEmail) {
+      fetchRole();
+    }
+  }, [currentEmail]);
+
   return (
     <div className="sidebar">
-      <h2>Menu</h2>
-      <ul>
+      <div className="sidebar-header">
+        <h2>📊 Menu</h2>
+        {currentEmail && <p className="user-email">{currentEmail}</p>}
+      </div>
+      <ul className="sidebar-nav">
         <li>
-          <Link to="/">🏠 Home</Link>
+          <Link to={`/dashboard/${encodeURIComponent(currentEmail)}`}>🏠 Dashboard</Link>
         </li>
         <li>
-          <Link to="/Campaign">📨 Create Campaign</Link>
+          <Link to={`/campaign/${encodeURIComponent(currentEmail)}`}>📨 Create Campaign</Link>
         </li>
         <li>
-          <Link to="/Inbox">💬 Inbox</Link>
+          <Link to={`/inbox/${encodeURIComponent(currentEmail)}`}>💬 Inbox</Link>
         </li>
+        {role === 1 && (
+          <li>
+            <Link to={`/assign-number/${encodeURIComponent(currentEmail)}`}>📱 Assign Number</Link>
+          </li>
+        )}
       </ul>
     </div>
   );
