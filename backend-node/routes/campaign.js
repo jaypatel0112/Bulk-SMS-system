@@ -66,7 +66,6 @@ router.get("/:email", async (req, res) => {
   }
 });
 
-// Get campaign details by ID
 // Get campaign details by ID with user validation
 router.get('/details/:id', async (req, res) => {
   const { id } = req.params;
@@ -243,5 +242,6 @@ router.post('/upload', async (req, res) => {
     res.status(500).json({ error: 'Internal server error while uploading campaign' });
   }
 });
+
 
 export default router;

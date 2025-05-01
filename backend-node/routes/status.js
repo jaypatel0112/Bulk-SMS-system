@@ -31,6 +31,7 @@ router.post('/status', async (req, res) => {
       `SELECT campaign_id FROM messages WHERE twilio_sid = $1`,
       [MessageSid]
     );
+    
 
     if (messageResult.rows.length === 0) {
       return res.status(404).send('Message not found');

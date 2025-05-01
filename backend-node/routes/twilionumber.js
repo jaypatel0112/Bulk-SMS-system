@@ -78,4 +78,26 @@ router.get('/user-numbers/:email', async (req, res) => {
   }
 });
 
+// DELETE a Twilio number assigned to a user
+router.delete('/', async (req, res) => {
+  const { phone_number, username } = req.body;
+
+  try {
+    const result = await query(
+      `DELETE FROM twilio_numbers WHERE phone_number = $1 AND username = $2 RETURNING *`,
+      [phone_number, username]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Number not found or already deleted.' });
+    }
+
+    res.status(200).json({ message: 'Twilio number deleted successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete number' });
+  }
+});
+
+
 export default router;
