@@ -32,7 +32,6 @@ const CampaignDetails = () => {
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/campaign/details/${id}`,
         {
-          headers: { "ngrok-skip-browser-warning": "true" },
           params: { email }
         }
       );
@@ -61,7 +60,6 @@ const CampaignDetails = () => {
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/campaign/details/${id}`,
         {
-          headers: { "ngrok-skip-browser-warning": "true" },
           params: { email }
         }
       );

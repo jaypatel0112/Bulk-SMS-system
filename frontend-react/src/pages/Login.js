@@ -19,7 +19,6 @@ const Login = () => {
     axios.post(
       `${process.env.REACT_APP_API_URL}/api/auth/login`,
       { username, password },
-      { headers: { 'ngrok-skip-browser-warning': 'true' } }
     )
     .then((response) => {
       if (response.status === 200) {

@@ -7,9 +7,11 @@ import './Dashboard.css';
 const Dashboard = () => {
   const { email } = useParams();
   const [campaigns, setCampaigns] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [role, setRole] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,25 +24,58 @@ const Dashboard = () => {
       const decodedEmail = decodeURIComponent(email);
 
       try {
-        // Fetch campaigns
-        const campaignsResponse = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/campaign/${decodedEmail}`,
-          {
-            headers: {
-              'ngrok-skip-browser-warning': 'true',
-              'Content-Type': 'application/json',
-            },
-          }
+        const roleRes = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(decodedEmail)}`
         );
 
-        const campaignData = Array.isArray(campaignsResponse.data)
-          ? campaignsResponse.data
-          : campaignsResponse.data?.rows || [];
+        if (roleRes.data?.role !== undefined) {
+          setRole(roleRes.data.role);
 
-        setCampaigns(campaignData);
+          if (roleRes.data.role === 1) {
+            try {
+              const regularUsersRes = await axios.get(
+                `${process.env.REACT_APP_API_URL}/api/user/role/2/all`
+              );
+
+              const allUsers = [
+                {
+                  user_id: 'admin',
+                  email: decodedEmail,
+                  isAdmin: true,
+                },
+                ...regularUsersRes.data.map(user => ({
+                  ...user,
+                  isAdmin: false,
+                })),
+              ];
+
+              setUsers(allUsers);
+              setCampaigns([]);
+            } catch (err) {
+              console.error('Error fetching users:', err);
+              setUsers([
+                {
+                  user_id: 'admin',
+                  email: decodedEmail,
+                  isAdmin: true,
+                },
+              ]);
+            }
+          } else {
+            const campaignsResponse = await axios.get(
+              `${process.env.REACT_APP_API_URL}/api/campaign/${decodedEmail}`
+            );
+
+            const campaignData = Array.isArray(campaignsResponse.data)
+              ? campaignsResponse.data
+              : campaignsResponse.data?.rows || [];
+
+            setCampaigns(campaignData);
+          }
+        }
       } catch (err) {
-        console.error('Campaigns API Error:', err);
-        setError(err.response?.data?.error || err.message || 'Failed to load campaigns');
+        console.error('API Error:', err);
+        setError(err.response?.data?.error || err.message || 'Failed to load data');
         if (err.response?.status === 401) {
           navigate('/login');
         }
@@ -49,28 +84,40 @@ const Dashboard = () => {
       }
     };
 
-    const fetchRole = async () => {
-      try {
-        const res = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`
-        );
-        if (res.data?.role !== undefined) {
-          setRole(res.data.role);
-        }
-      } catch (err) {
-        console.error('Role API Error:', err);
-      }
-    };
-
     fetchData();
-    fetchRole();
   }, [email, navigate]);
+
+  const handleUserClick = async (userEmail) => {
+    try {
+      setLoading(true);
+      const campaignsResponse = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/campaign/${userEmail}`
+      );
+
+      const campaignData = Array.isArray(campaignsResponse.data)
+        ? campaignsResponse.data
+        : campaignsResponse.data?.rows || [];
+
+      setCampaigns(campaignData);
+      setSelectedUser(userEmail);
+    } catch (err) {
+      console.error('Campaigns API Error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to load user campaigns');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToUsers = () => {
+    setSelectedUser(null);
+    setCampaigns([]);
+  };
 
   if (loading) {
     return (
       <div className="dashboard-loading">
         <div className="spinner"></div>
-        <p>Loading your campaigns...</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -95,42 +142,96 @@ const Dashboard = () => {
 
       <div className="dashboard-main">
         <header className="dashboard-header">
-          <h1>Your Campaigns</h1>
+          <h1>
+            {role === 1
+              ? selectedUser
+                ? `Campaigns by ${selectedUser}`
+                : 'All Users'
+              : 'Your Campaigns'}
+          </h1>
+          {role === 1 && selectedUser && (
+            <button onClick={handleBackToUsers} className="back-button">
+              Back to Users
+            </button>
+          )}
           <p className="user-email">Logged in as: {decodeURIComponent(email)}</p>
         </header>
 
-        <div className="campaigns-list">
-          {campaigns && campaigns.length > 0 ? (
-            campaigns.map((campaign) => {
-              const campaignId =
-                campaign.id || campaign.campaign_id || Math.random().toString(36).substr(2, 9);
-              const campaignName = campaign.campaign_name || campaign.name || 'Unnamed Campaign';
-              const createdDate = campaign.created_at
-                ? new Date(campaign.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                : 'Date not available';
-
-              return (
-                <div
-                  key={campaignId}
-                  className="campaign-card"
-                  onClick={() =>
-                    navigate(`/campaign/${encodeURIComponent(email)}/${campaign.id}`)
-                  }
-                >
-                  <h3>{campaignName}</h3>
-                  <p className="campaign-date">Created: {createdDate}</p>
-                  {campaign.status && (
-                    <p className={`campaign-status ${campaign.status.toLowerCase()}`}>
-                      Status: {campaign.status}
+        <div className={role === 1 && !selectedUser ? 'users-list' : 'campaigns-list'}>
+          {role === 1 ? (
+            selectedUser ? (
+              campaigns.length > 0 ? (
+                campaigns.map((campaign) => (
+                  <div
+                    key={campaign.id || campaign.campaign_id}
+                    className="campaign-card"
+                    onClick={() =>
+                      navigate(`/campaign/${encodeURIComponent(email)}/${campaign.id}`)
+                    }
+                  >
+                    <h3>{campaign.campaign_name || campaign.name || 'Unnamed Campaign'}</h3>
+                    <p className="campaign-date">
+                      Created:{' '}
+                      {campaign.created_at
+                        ? new Date(campaign.created_at).toLocaleDateString()
+                        : 'Date not available'}
                     </p>
-                  )}
+                    {campaign.status && (
+                      <p className={`campaign-status ${campaign.status.toLowerCase()}`}>
+                        Status: {campaign.status}
+                      </p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="no-campaigns">
+                  <img src="/empty-state.svg" alt="No campaigns" className="empty-icon" />
+                  <h3>No campaigns found for this user</h3>
                 </div>
-              );
-            })
+              )
+            ) : users.length > 0 ? (
+              users.map((user) => (
+                <div
+                  key={user.user_id}
+                  className={`user-card ${user.isAdmin ? 'admin-user' : ''}`}
+                  onClick={() => handleUserClick(user.email)} // Now admin is also clickable
+                >
+                  <h3>{user.email}</h3>
+                  <p className="user-role">
+                    Role: {user.isAdmin ? 'Administrator' : 'Standard User'}
+                    {user.isAdmin && <span className="admin-badge">Admin</span>}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="no-users">
+                <img src="/empty-state.svg" alt="No users" className="empty-icon" />
+                <h3>No users found</h3>
+              </div>
+            )
+          ) : campaigns.length > 0 ? (
+            campaigns.map((campaign) => (
+              <div
+                key={campaign.id || campaign.campaign_id}
+                className="campaign-card"
+                onClick={() =>
+                  navigate(`/campaign/${encodeURIComponent(email)}/${campaign.id}`)
+                }
+              >
+                <h3>{campaign.campaign_name || campaign.name || 'Unnamed Campaign'}</h3>
+                <p className="campaign-date">
+                  Created:{' '}
+                  {campaign.created_at
+                    ? new Date(campaign.created_at).toLocaleDateString()
+                    : 'Date not available'}
+                </p>
+                {campaign.status && (
+                  <p className={`campaign-status ${campaign.status.toLowerCase()}`}>
+                    Status: {campaign.status}
+                  </p>
+                )}
+              </div>
+            ))
           ) : (
             <div className="no-campaigns">
               <img src="/empty-state.svg" alt="No campaigns" className="empty-icon" />

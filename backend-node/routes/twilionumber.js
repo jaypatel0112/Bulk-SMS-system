@@ -8,7 +8,7 @@ router.post('/', async (req, res) => {
 
   try {
     const employeeResult = await query(
-      `SELECT * FROM employees WHERE user_id = $1`,
+      `SELECT * FROM sms_platform.employees WHERE user_id = $1`,
       [user_id]
     );
 
@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
     const username = employeeResult.rows[0].username;
 
     const checkDuplicate = await query(
-      `SELECT * FROM twilio_numbers WHERE phone_number = $1 AND username = $2`,
+      `SELECT * FROM sms_platform.twilio_numbers WHERE phone_number = $1 AND username = $2`,
       [phone_number, username]
     );
 
@@ -27,11 +27,14 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: `You are trying to assign the same Twilio number (${phone_number}) to the same employee (${username}) again.` });
     }
 
+    console.log("Inserting the phone number into twilio_numbers table");
+
     const result = await query(
-      `INSERT INTO twilio_numbers (phone_number, username, user_id, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *`,
+      `INSERT INTO sms_platform.twilio_numbers (phone_number, username, user_id, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *`,
       [phone_number, username, user_id]
     );
-
+    
+    console.log("Inserted the phone number into twilio_numbers table");
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -42,7 +45,7 @@ router.post('/', async (req, res) => {
 // ✅ Get all Twilio numbers (not tied to a user)
 router.get('/', async (req, res) => {
   try {
-    const result = await query(`SELECT phone_number, username FROM twilio_numbers`);
+    const result = await query(`SELECT phone_number, username FROM sms_platform.twilio_numbers`);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -54,7 +57,7 @@ router.get('/', async (req, res) => {
 router.get('/user-numbers/:email', async (req, res) => {
   try {
     const employeeResult = await query(
-      `SELECT user_id FROM employees WHERE username = $1`,
+      `SELECT user_id FROM sms_platform.employees WHERE username = $1`,
       [req.params.email]
     );
     console.log('Employee Result:', employeeResult.rows); // Log the result for debugging
@@ -65,7 +68,7 @@ router.get('/user-numbers/:email', async (req, res) => {
     const userId = employeeResult.rows[0].user_id;
 
     const numbersResult = await query(
-      `SELECT phone_number FROM twilio_numbers WHERE user_id = $1`,
+      `SELECT phone_number FROM sms_platform.twilio_numbers WHERE user_id = $1`,
       [userId]
     );
 
@@ -84,7 +87,7 @@ router.delete('/', async (req, res) => {
 
   try {
     const result = await query(
-      `DELETE FROM twilio_numbers WHERE phone_number = $1 AND username = $2 RETURNING *`,
+      `DELETE FROM sms_platform.twilio_numbers WHERE sms_platform.phone_number = $1 AND username = $2 RETURNING *`,
       [phone_number, username]
     );
 

@@ -24,7 +24,6 @@ const Sidebar = ({ email }) => {
         const res = await fetch(
           `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(currentEmail)}`,
           {
-            headers: { "ngrok-skip-browser-warning": "true" },
             params: { email }
           }
         );

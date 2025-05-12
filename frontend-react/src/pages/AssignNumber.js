@@ -19,18 +19,8 @@ const AssignNumber = () => {
     setLoading(true);
     try {
       const [empRes, numberRes] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/user/role/2/all`, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true',
-            'Content-Type': 'application/json',
-          },
-        }),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true',
-            'Content-Type': 'application/json',
-          },
-        }),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/user/role/2/all`, ),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`,),
       ]);
 
       setEmployees(Array.isArray(empRes.data) ? empRes.data : []);
@@ -56,7 +46,6 @@ const AssignNumber = () => {
         user_id: selectedUserId,
       }, {
         headers: {
-          'ngrok-skip-browser-warning': 'true',
           'Content-Type': 'application/json',
         }
       });
@@ -80,7 +69,6 @@ const AssignNumber = () => {
       await axios.delete(`${process.env.REACT_APP_API_URL}/api/twilionumber`, {
         data: { phone_number, username },
         headers: {
-          'ngrok-skip-browser-warning': 'true',
           'Content-Type': 'application/json',
         },
       });

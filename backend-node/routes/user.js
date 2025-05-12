@@ -10,7 +10,7 @@ router.get('/role/:email', async (req, res) => {
   
     try {
       const result = await query(
-        `SELECT role FROM employees WHERE username = $1`,
+        `SELECT role FROM sms_platform.employees WHERE username = $1`,
         [email]
       );
   
@@ -34,8 +34,8 @@ router.get('/:email', async (req, res) => {
   try {
     const result = await query(
       `SELECT u.id, u.email, e.role
-       FROM users u
-       JOIN employees e ON u.id = e.user_id
+       FROM sms_platform.users u
+       JOIN sms_platform.employees e ON u.id = e.user_id
        WHERE u.email = $1`,
       [email]
     );
@@ -55,7 +55,7 @@ router.get('/:email', async (req, res) => {
 router.get('/role/2/all', async (req, res) => {
     try {
       const result = await query(
-        `SELECT user_id, username AS email FROM employees WHERE role = 2`
+        `SELECT user_id, username AS email FROM sms_platform.employees WHERE role = 2`
       ); // Log the result for debugging);
       res.json(result.rows);
     } catch (err) {

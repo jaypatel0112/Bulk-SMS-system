@@ -13,7 +13,7 @@ router.get('/inbox/:email', async (req, res) => {
   try {
     // 1. Find user and their role
     const employeeResult = await pool.query(
-      `SELECT user_id, role FROM employees WHERE username = $1`,
+      `SELECT user_id, role FROM sms_platform.employees WHERE username = $1`,
       [email]
     );
 
@@ -24,7 +24,7 @@ router.get('/inbox/:email', async (req, res) => {
     const { user_id, role } = employeeResult.rows[0];
 
     // 2. Fetch all Twilio numbers in the system
-    const allNumbersResult = await pool.query(`SELECT phone_number FROM twilio_numbers`);
+    const allNumbersResult = await pool.query(`SELECT phone_number FROM sms_platform.twilio_numbers`);
     const allTwilioNumbers = allNumbersResult.rows.map(r => normalizePhoneNumber(r.phone_number));
 
     let employeeNumbers = [];
@@ -32,7 +32,7 @@ router.get('/inbox/:email', async (req, res) => {
     if (role !== 1) {
       // Employee role = 2, get only their assigned numbers
       const userNumbersResult = await pool.query(
-        `SELECT phone_number FROM twilio_numbers WHERE user_id = $1`,
+        `SELECT phone_number FROM sms_platform.twilio_numbers WHERE user_id = $1`,
         [user_id]
       );
       employeeNumbers = userNumbersResult.rows.map(r => normalizePhoneNumber(r.phone_number));
@@ -45,7 +45,7 @@ router.get('/inbox/:email', async (req, res) => {
     // 3. Fetch all messages
     const messagesResult = await pool.query(
       `SELECT id, from_number, to_number, body, direction, created_at
-       FROM messages
+       FROM sms_platform.messages
        ORDER BY created_at ASC`
     );
 

@@ -16,9 +16,6 @@ const Signup = () => {
           username,
           password,
           role, // Send numeric role value (1 for admin, 2 for user)
-        },
-        {
-          headers: { 'ngrok-skip-browser-warning': 'true' }, // ngrok header
         }
       )
       .then((response) => {

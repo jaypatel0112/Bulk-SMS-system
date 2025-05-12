@@ -1,3 +1,4 @@
+// Inbox.js
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -18,15 +19,10 @@ const Inbox = () => {
 
   const fetchConversations = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/inbox/${encodeURIComponent(email)}`, {
-        headers: { "ngrok-skip-browser-warning": "true" }
-      });
-
+      const res = await axios.get(`${API_URL}/api/inbox/${encodeURIComponent(email)}`);
       const newConversations = res.data;
-
       setConversations(newConversations);
 
-      // Always update the selectedConversation if it's still valid
       if (selectedConversation) {
         const updatedConv = newConversations.find(conv =>
           conv.twilio_number === selectedConversation.twilio_number &&
@@ -34,16 +30,11 @@ const Inbox = () => {
         );
 
         if (updatedConv) {
-          // Always update messages to reflect new incoming messages
-          setSelectedConversation(prev => ({
-            ...updatedConv
-          }));
+          setSelectedConversation({ ...updatedConv });
         } else {
-          // If the conversation no longer exists, deselect
           setSelectedConversation(null);
         }
       }
-
       setLoading(false);
     } catch (err) {
       console.error("Error fetching conversations", err);
@@ -56,12 +47,9 @@ const Inbox = () => {
       navigate('/login');
       return;
     }
-
     fetchConversations();
     const interval = setInterval(fetchConversations, 5000);
-
     return () => clearInterval(interval);
-    // eslint-disable-next-line
   }, [email]);
 
   useEffect(() => {
@@ -76,7 +64,6 @@ const Inbox = () => {
 
   const sendReply = async () => {
     if (!replyText.trim() || !selectedConversation) return;
-
     try {
       await axios.post(`${API_URL}/api/message/reply`, {
         to: selectedConversation.contact_phone,
@@ -86,7 +73,6 @@ const Inbox = () => {
         email: decodeURIComponent(email)
       });
 
-      // Optimistic UI update
       const newMessage = {
         body: replyText,
         direction: "outbound",
@@ -98,7 +84,6 @@ const Inbox = () => {
         messages: [...prev.messages, newMessage]
       }));
 
-      // Also update the conversations sidebar preview
       setConversations(prev =>
         prev.map(conv =>
           conv.twilio_number === selectedConversation.twilio_number &&
@@ -109,13 +94,7 @@ const Inbox = () => {
       );
 
       setReplyText("");
-
-      setTimeout(() => {
-        if (bottomRef.current) {
-          bottomRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-      }, 100);
-
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     } catch (err) {
       console.error("Error sending reply", err);
     }
@@ -139,7 +118,6 @@ const Inbox = () => {
         <div className="dashboard-header">
           <h2>💬 Inbox ({decodeURIComponent(email)})</h2>
         </div>
-
         <div className="inbox-container">
           <div className="inbox-sidebar">
             <h3>Conversations ({conversations.length})</h3>
@@ -185,7 +163,6 @@ const Inbox = () => {
                     From Twilio Number: {selectedConversation.twilio_number}
                   </span>
                 </div>
-
                 <div className="chat-messages">
                   {selectedConversation.messages.length === 0 ? (
                     <p className="no-messages">No messages in this conversation</p>

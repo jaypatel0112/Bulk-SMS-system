@@ -8,11 +8,11 @@ router.post('/signup', async (req, res) => {
 
     try {
         // Verify connection by running a test query
-        await query('SELECT 1 FROM employees LIMIT 1');
+        await query('SELECT 1 FROM sms_platform.employees LIMIT 1');
         
         // Check for existing user
         const checkUser = await query(
-            `SELECT 1 FROM employees WHERE username = $1 LIMIT 1`,
+            `SELECT 1 FROM sms_platform.employees WHERE username = $1 LIMIT 1`,
             [username]
         );
 
@@ -26,14 +26,14 @@ router.post('/signup', async (req, res) => {
         if (role === 2) {
             // Get the next available user_id
             const userIdResult = await query(
-                `SELECT COALESCE(MAX(user_id), 0) + 1 AS next_user_id FROM employees WHERE role = 2`
+                `SELECT COALESCE(MAX(user_id), 0) + 1 AS next_user_id FROM sms_platform.employees WHERE role = 2`
             );
             user_id = userIdResult.rows[0].next_user_id;
         }
 
         // Insert new user with or without user_id
         const result = await query(
-            `INSERT INTO employees (user_id, username, password, role) 
+            `INSERT INTO sms_platform.employees (user_id, username, password, role) 
              VALUES ($1, $2, $3, $4) 
              RETURNING id, user_id, username, role`,
             [user_id, username, password, role]
@@ -63,7 +63,7 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
   
     try {
-      const result = await query('SELECT * FROM employees WHERE username = $1', [username]);
+      const result = await query('SELECT * FROM sms_platform.employees WHERE username = $1', [username]);
       const user = result.rows[0];
   
       if (!user) {

@@ -1,51 +1,57 @@
-// server.js
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+
 import messageRoutes from './routes/message.js';
 import campaignRoutes from './routes/campaign.js';
 import messageStatusRoutes from './routes/status.js';
-import authRouter from './routes/auth.js';  // Import auth.js router
+import authRouter from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import twilionumberRoutes from './routes/twilionumber.js';
-import twilioRoutes from './routes/twilionumber.js';
 import inboxRoutes from './routes/inbox.js';
+import { initializeScheduler } from './routes/campaign.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// ✅ Middleware (corrected)
+// Middleware
 app.use(cors());
-app.use(express.urlencoded({ extended: false })); // for Twilio webhook
-app.use(express.json());                         // for JSON payloads
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 // Routes
 app.use('/api/message', messageRoutes);
 app.use('/api/campaign', campaignRoutes);
-app.use("/api/message", messageStatusRoutes);
+app.use('/api/message', messageStatusRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRoutes);
 app.use('/api/twilionumber', twilionumberRoutes);
-app.use('/api/twilio-numbers', twilioRoutes);
+app.use('/api/twilio-numbers', twilionumberRoutes);
 app.use('/api', inboxRoutes);
 
+initializeScheduler();
 
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK',
+    timestamp: new Date().toISOString()
+  });
+});
 
-// DB
-import { pool } from './index.js';
+// Database connection test (using the pool directly)
+import { testConnection } from './db/index.js';
 
-pool.connect()
-  .then(client => {
-    console.log('✅ Database connected');
-    client.release();
+// Test database connection on startup
+testConnection()
+  .then(connected => {
+    if (!connected) {
+      console.error('⚠️ Application starting without database connection');
+    }
   })
   .catch(err => {
-    console.error('❌ Database connection failed:', err.message);
-    process.exit(1);
+    console.error('⚠️ Database connection test failed:', err);
   });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+export default app;

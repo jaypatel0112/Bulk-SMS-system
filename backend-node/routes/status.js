@@ -19,7 +19,7 @@ router.post('/status', async (req, res) => {
 
     // 1. Update the message status
     await pool.query(
-      `UPDATE messages 
+      `UPDATE sms_platform.messages 
        SET status = $1::VARCHAR, 
            delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END 
        WHERE twilio_sid = $2`,
@@ -28,7 +28,7 @@ router.post('/status', async (req, res) => {
 
     // 2. Get the campaign ID from the message
     const messageResult = await pool.query(
-      `SELECT campaign_id FROM messages WHERE twilio_sid = $1`,
+      `SELECT campaign_id FROM sms_platform.messages WHERE twilio_sid = $1`,
       [MessageSid]
     );
     
@@ -59,7 +59,7 @@ router.post('/status', async (req, res) => {
 
       // Increment the corresponding status column in the campaign table
       await pool.query(
-        `UPDATE campaigns
+        `UPDATE sms_platform.campaigns
          SET ${statusColumn} = ${statusColumn} + 1
          WHERE id = $1`,
         [campaignId]

@@ -44,45 +44,43 @@ const Campaign = () => {
       const roleResponse = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`,
         {
-          headers: { "ngrok-skip-browser-warning": "true" },
           params: { email }
         }
       );
 
       const role = roleResponse.data.role;
 
-    // If role is 1 (admin) or user_id is null (admin condition), show the textbox
-    if (role === 1 || roleResponse.data.user_id === null) {
-      setUserRole('admin');
-    } else {
-      setUserRole('user');
-    }
+      // If role is 1 (admin) or user_id is null (admin condition), show the textbox
+      if (role === 1 || roleResponse.data.user_id === null) {
+        setUserRole('admin');
+      } else {
+        setUserRole('user');
+      }
 
-    // Get assigned numbers for non-admin users
-    if (role !== 1) {
-      const numbersResponse = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
-        {
-          headers: { "ngrok-skip-browser-warning": "true" },
-          params: { email }
+      // Get assigned numbers for non-admin users
+      if (role !== 1) {
+        const numbersResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
+          {
+            params: { email }
+          }
+        );
+
+        // Handle both response formats
+        let numbers = [];
+
+        if (Array.isArray(numbersResponse.data.numbers)) {
+          numbers = numbersResponse.data.numbers;
+        } else if (Array.isArray(numbersResponse.data)) {
+          numbers = numbersResponse.data;
         }
-      );
 
-      // Handle both response formats
-      let numbers = [];
-
-      if (Array.isArray(numbersResponse.data.numbers)) {
-        numbers = numbersResponse.data.numbers;
-      } else if (Array.isArray(numbersResponse.data)) {
-        numbers = numbersResponse.data;
-      }
-
-      setAssignedNumbers(numbers);
-      
-      // Auto-select the first number if available
-      if (numbers.length > 0) {
-        setTwilioNumber(numbers[0]);
-      }
+        setAssignedNumbers(numbers);
+        
+        // Auto-select the first number if available
+        if (numbers.length > 0) {
+          setTwilioNumber(numbers[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -137,6 +135,21 @@ const Campaign = () => {
     }, 0);
   };
 
+  const convertCDTToUTC = (cdtDateTime) => {
+    if (!cdtDateTime) return null;
+    
+    // Create a date object from the input string (which is in local browser time)
+    const date = new Date(cdtDateTime);
+    
+    // Convert to UTC and format as ISO string
+    const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    
+    // For CDT to UTC, we need to add 5 hours (CDT is UTC-5)
+    utcDate.setHours(utcDate.getHours() + 5);
+    
+    return utcDate.toISOString();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const STOP_TEXT = ' STOP to opt out.';
@@ -158,7 +171,7 @@ const Campaign = () => {
       sender_id: twilioNumber,
       message_template: updatedMessage,
       contacts,
-      scheduled_at: scheduledAt || null,
+      scheduled_at: convertCDTToUTC(scheduledAt),
       user_email: decodeURIComponent(email),
       user_role: userRole
     };
@@ -257,6 +270,7 @@ const Campaign = () => {
                   onChange={(e) => setScheduledAt(e.target.value)}
                   className="form-control"
                 />
+                <small className="timezone-note">Times are in CDT (UTC-5) and will be converted to UTC</small>
               </div>
 
               <div className="form-group">

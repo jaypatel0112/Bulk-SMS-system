@@ -1,10 +1,4 @@
-.dashboard-wrapper {
-  display: flex;
-  height: 100vh;
-  font-family: "Segoe UI", sans-serif;
-  background-color: #f9f9f9;
-}
-
+/* Dashboard Layout */
 .dashboard-container {
   display: flex;
   min-height: 100vh;
@@ -78,13 +72,14 @@
   background: #2980b9;
 }
 
-/* Campaigns Grid */
-.campaigns-list {
+/* Cards Grid */
+.campaigns-list, .users-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
+/* Campaign Card */
 .campaign-card {
   background: white;
   padding: 1.5rem;
@@ -128,8 +123,34 @@
   color: #856404;
 }
 
-/* Empty State */
-.no-campaigns {
+/* User Card */
+.user-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.user-card h3 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.user-role {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* Empty States */
+.no-campaigns, .no-users {
   text-align: center;
   padding: 3rem;
   grid-column: 1 / -1;
@@ -138,17 +159,18 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
-.no-campaigns h3 {
+.no-campaigns h3, .no-users h3 {
   color: #2c3e50;
   margin-bottom: 0.5rem;
 }
 
-.no-campaigns p {
+.no-campaigns p, .no-users p {
   color: #7f8c8d;
   margin-bottom: 1.5rem;
 }
 
-.create-button {
+/* Buttons */
+.create-button, .back-button {
   background: #3498db;
   color: white;
   border: none;
@@ -159,134 +181,55 @@
   transition: background 0.2s ease;
 }
 
-.create-button:hover {
+.create-button:hover, .back-button:hover {
   background: #2980b9;
 }
 
-/* Inbox Styles (kept from your original) */
-.inbox-container {
-  display: flex;
-  height: 100%;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-
-.inbox-sidebar {
-  width: 250px;
-  background: #f1f1f1;
-  padding: 16px;
-  border-right: 1px solid #ccc;
-  overflow-y: auto;
-}
-
-.conversation-item {
-  padding: 10px;
-  border-radius: 8px;
-  background: white;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.conversation-item.active {
-  background-color: #e0f7fa;
-}
-
-.inbox-chat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-}
-
-.chat-header {
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.message {
-  max-width: 70%;
-  padding: 10px;
-  border-radius: 10px;
-  position: relative;
-  font-size: 14px;
-}
-
-.message.outbound {
-  align-self: flex-end;
-  background: #dcf8c6;
-}
-
-.message.inbound {
-  align-self: flex-start;
-  background: #f1f0f0;
-}
-
-.message span {
-  display: block;
-  font-size: 10px;
-  margin-top: 4px;
-  color: #888;
-}
-
-.chat-input {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.chat-input input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-
-.chat-input button {
-  padding: 10px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.chat-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  color: #888;
+.back-button {
+  margin-right: 15px;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .campaigns-list {
+  .campaigns-list, .users-list {
     grid-template-columns: 1fr;
   }
   
   .dashboard-main {
     padding: 1rem;
   }
-  
-  .inbox-container {
-    flex-direction: column;
-  }
-  
-  .inbox-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #ccc;
-  }
+}
+
+/* Admin-specific user card styles */
+.user-card.admin-user {
+  border-left: 4px solid #3498db;
+  background-color: #f8fafc;
+}
+
+.admin-badge {
+  display: inline-block;
+  background-color: #3498db;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 8px;
+}
+
+.user-note {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Disable pointer events for admin cards */
+.user-card.admin-user {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.user-card.admin-user:hover {
+  transform: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
