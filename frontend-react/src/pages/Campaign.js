@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../components/Sidebar';
@@ -90,48 +91,86 @@ const Campaign = () => {
     }
   };
 
+  const processParsedData = (data) => {
+    if (!data || data.length === 0) {
+      setFeedbackMsg({ type: 'error', text: 'File is empty or could not be parsed.' });
+      return;
+    }
+    
+    // Normalize headers to lowercase with underscores
+    const headers = Object.keys(data[0] || {});
+    const normalizedHeaders = headers.map(h => 
+      String(h).trim().toLowerCase().replace(/\s+/g, '_')
+    );
+    
+    const normalized = data.map(row => {
+      const obj = {};
+      headers.forEach((h, index) => {
+        const normalizedKey = normalizedHeaders[index];
+        // Safely handle the cell value
+        const value = row[h];
+        obj[normalizedKey] = (value === null || value === undefined) 
+          ? '' 
+          : String(value).trim();
+      });
+      return obj;
+    });
+    
+    // Store both original headers (for display) and normalized headers (for processing)
+    setCsvHeaders(normalizedHeaders); // This is what we'll use for variable replacement
+    setContacts(normalized);
+    setFeedbackMsg({ type: 'success', text: 'File loaded successfully.' });
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file || file.type !== 'text/csv') {
-      setFeedbackMsg({ type: 'error', text: 'Please upload a valid CSV file.' });
+    if (!file || !(file.type === 'text/csv' || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+      setFeedbackMsg({ type: 'error', text: 'Please upload a valid CSV or Excel file.' });
       return;
     }
 
     setCsvFile(file);
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const headers = Object.keys(results.data[0] || {});
-        const normalized = results.data.map(row => {
-          const obj = {};
-          headers.forEach(h => {
-            const key = h.trim().toLowerCase().replace(/\s+/g, '_');
-            obj[key] = row[h]?.trim();
-          });
-          return obj;
-        });
-        setCsvHeaders(headers);
-        setContacts(normalized);
-        setFeedbackMsg({ type: 'success', text: 'CSV file loaded successfully.' });
-      },
-      error: (err) => {
-        setFeedbackMsg({ type: 'error', text: 'Error parsing CSV file.' });
-        console.error(err);
-      }
-    });
+    
+    if (file.type === 'text/csv') {
+      // Existing CSV parsing logic
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          processParsedData(results.data);
+        },
+        error: (err) => {
+          setFeedbackMsg({ type: 'error', text: 'Error parsing CSV file.' });
+          console.error(err);
+        }
+      });
+    } else {
+      // New Excel parsing logic
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        processParsedData(jsonData);
+      };
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   const handleInsertVariable = (variable) => {
+    // Normalize the variable to match our header format
+    const normalizedVar = variable.trim().toLowerCase().replace(/\s+/g, '_');
     const cursorPos = messageRef.current.selectionStart;
-    const newMessage = `${message.slice(0, cursorPos)}\${${variable}}${message.slice(cursorPos)}`;
+    const newMessage = `${message.slice(0, cursorPos)}\${${normalizedVar}}${message.slice(cursorPos)}`;
     setMessage(newMessage);
     setShowVars(false);
 
     setTimeout(() => {
       messageRef.current.focus();
-      messageRef.current.selectionStart = cursorPos + variable.length + 3;
-      messageRef.current.selectionEnd = cursorPos + variable.length + 3;
+      messageRef.current.selectionStart = cursorPos + normalizedVar.length + 3;
+      messageRef.current.selectionEnd = cursorPos + normalizedVar.length + 3;
     }, 0);
   };
 
@@ -321,11 +360,11 @@ const Campaign = () => {
             {/* Right Section */}
             <div className="form-right-section">
               <div className="file-upload-container">
-                <label>Contact List (CSV)</label>
+                <label>Contact List (CSV or Excel)</label>
                 <div className="file-upload-area">
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     onChange={handleFileChange}
                     id="file-input"
                     style={{ display: 'none' }}
@@ -334,7 +373,7 @@ const Campaign = () => {
                     <div className="upload-content">
                       <span className="upload-icon">📄</span>
                       <span className="upload-text">
-                        {csvFile ? csvFile.name : 'Drop your CSV file here'}
+                        {csvFile ? csvFile.name : 'Drop your CSV/Excel file here'}
                       </span>
                       <span className="upload-hint">or click to browse</span>
                     </div>

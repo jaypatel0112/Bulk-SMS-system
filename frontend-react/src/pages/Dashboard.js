@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import './Dashboard.css';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Dashboard = () => {
   const { email } = useParams();
@@ -12,6 +14,7 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [role, setRole] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -113,6 +116,54 @@ const Dashboard = () => {
     setCampaigns([]);
   };
 
+  const handleDeleteUser = async (userEmail) => {
+    if (!window.confirm(`Are you sure you want to permanently delete user ${userEmail}? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingUser(userEmail);
+
+    try {
+      await axios.delete(
+        `${process.env.REACT_APP_API_URL}/api/user/${encodeURIComponent(userEmail)}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          data: {
+            adminEmail: decodeURIComponent(email)
+          }
+        }
+      );
+
+      const updatedUsers = users.filter(user => user.email !== userEmail);
+      setUsers(updatedUsers);
+
+      if (selectedUser === userEmail) {
+        handleBackToUsers();
+      }
+
+      toast.success(`User ${userEmail} deleted successfully`);
+    } catch (err) {
+      console.error('Delete user error:', err);
+      const errorMessage = err.response?.data?.error ||
+        err.response?.data?.details ||
+        err.message ||
+        'Failed to delete user';
+      toast.error(`Error: ${errorMessage}`);
+    } finally {
+      setDeletingUser(null);
+    }
+  };
+
+  const handleLogout = () => {
+    // Clear any local/session storage if used
+    // localStorage.clear();
+    // sessionStorage.clear();
+
+    navigate('/login');
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -149,11 +200,16 @@ const Dashboard = () => {
                 : 'All Users'
               : 'Your Campaigns'}
           </h1>
-          {role === 1 && selectedUser && (
-            <button onClick={handleBackToUsers} className="back-button">
-              Back to Users
+          <div className="header-actions">
+            {role === 1 && selectedUser && (
+              <button onClick={handleBackToUsers} className="back-button">
+                Back to Users
+              </button>
+            )}
+            <button onClick={handleLogout} className="logout-button">
+              Logout
             </button>
-          )}
+          </div>
           <p className="user-email">Logged in as: {decodeURIComponent(email)}</p>
         </header>
 
@@ -194,13 +250,26 @@ const Dashboard = () => {
                 <div
                   key={user.user_id}
                   className={`user-card ${user.isAdmin ? 'admin-user' : ''}`}
-                  onClick={() => handleUserClick(user.email)} // Now admin is also clickable
                 >
-                  <h3>{user.email}</h3>
-                  <p className="user-role">
-                    Role: {user.isAdmin ? 'Administrator' : 'Standard User'}
-                    {user.isAdmin && <span className="admin-badge">Admin</span>}
-                  </p>
+                  <div className="user-card-content" onClick={() => handleUserClick(user.email)}>
+                    <h3>{user.email}</h3>
+                    <p className="user-role">
+                      Role: {user.isAdmin ? 'Administrator' : 'Standard User'}
+                      {user.isAdmin && <span className="admin-badge">Admin</span>}
+                    </p>
+                  </div>
+                  {!user.isAdmin && (
+                    <button
+                      className="delete-user-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteUser(user.email);
+                      }}
+                      disabled={deletingUser === user.email}
+                    >
+                      {deletingUser === user.email ? 'Deleting...' : 'Delete User'}
+                    </button>
+                  )}
                 </div>
               ))
             ) : (
