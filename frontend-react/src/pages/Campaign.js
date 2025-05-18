@@ -24,6 +24,7 @@ const Campaign = () => {
   const [feedbackMsg, setFeedbackMsg] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [assignedNumbers, setAssignedNumbers] = useState([]);
+  const [allNumbers, setAllNumbers] = useState([]);
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
   const messageRef = useRef(null);
 
@@ -36,52 +37,45 @@ const Campaign = () => {
     } else {
       fetchUserData();
     }
+    // eslint-disable-next-line
   }, [email, navigate]);
 
   const fetchUserData = async () => {
     setIsLoadingUserData(true);
     try {
-      // First get user role
+      // Get user role
       const roleResponse = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`,
-        {
-          params: { email }
-        }
+        { params: { email } }
       );
-
       const role = roleResponse.data.role;
 
-      // If role is 1 (admin) or user_id is null (admin condition), show the textbox
       if (role === 1 || roleResponse.data.user_id === null) {
         setUserRole('admin');
+        // Fetch all numbers for admin, ensure uniqueness
+        const allNumbersResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/twilionumber`
+        );
+        const uniqueNumbers = Array.from(
+          new Set((allNumbersResponse.data || []).map(n => n.phone_number))
+        );
+        setAllNumbers(uniqueNumbers);
+        if (uniqueNumbers.length > 0) setTwilioNumber(uniqueNumbers[0]);
       } else {
         setUserRole('user');
-      }
-
-      // Get assigned numbers for non-admin users
-      if (role !== 1) {
+        // Get assigned numbers for non-admin users
         const numbersResponse = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
-          {
-            params: { email }
-          }
+          { params: { email } }
         );
-
-        // Handle both response formats
         let numbers = [];
-
         if (Array.isArray(numbersResponse.data.numbers)) {
           numbers = numbersResponse.data.numbers;
         } else if (Array.isArray(numbersResponse.data)) {
           numbers = numbersResponse.data;
         }
-
         setAssignedNumbers(numbers);
-        
-        // Auto-select the first number if available
-        if (numbers.length > 0) {
-          setTwilioNumber(numbers[0]);
-        }
+        if (numbers.length > 0) setTwilioNumber(numbers[0]);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -96,28 +90,23 @@ const Campaign = () => {
       setFeedbackMsg({ type: 'error', text: 'File is empty or could not be parsed.' });
       return;
     }
-    
     // Normalize headers to lowercase with underscores
     const headers = Object.keys(data[0] || {});
-    const normalizedHeaders = headers.map(h => 
+    const normalizedHeaders = headers.map(h =>
       String(h).trim().toLowerCase().replace(/\s+/g, '_')
     );
-    
     const normalized = data.map(row => {
       const obj = {};
       headers.forEach((h, index) => {
         const normalizedKey = normalizedHeaders[index];
-        // Safely handle the cell value
         const value = row[h];
-        obj[normalizedKey] = (value === null || value === undefined) 
-          ? '' 
+        obj[normalizedKey] = (value === null || value === undefined)
+          ? ''
           : String(value).trim();
       });
       return obj;
     });
-    
-    // Store both original headers (for display) and normalized headers (for processing)
-    setCsvHeaders(normalizedHeaders); // This is what we'll use for variable replacement
+    setCsvHeaders(normalizedHeaders);
     setContacts(normalized);
     setFeedbackMsg({ type: 'success', text: 'File loaded successfully.' });
   };
@@ -128,11 +117,8 @@ const Campaign = () => {
       setFeedbackMsg({ type: 'error', text: 'Please upload a valid CSV or Excel file.' });
       return;
     }
-
     setCsvFile(file);
-    
     if (file.type === 'text/csv') {
-      // Existing CSV parsing logic
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -145,7 +131,6 @@ const Campaign = () => {
         }
       });
     } else {
-      // New Excel parsing logic
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = new Uint8Array(e.target.result);
@@ -160,13 +145,11 @@ const Campaign = () => {
   };
 
   const handleInsertVariable = (variable) => {
-    // Normalize the variable to match our header format
     const normalizedVar = variable.trim().toLowerCase().replace(/\s+/g, '_');
     const cursorPos = messageRef.current.selectionStart;
     const newMessage = `${message.slice(0, cursorPos)}\${${normalizedVar}}${message.slice(cursorPos)}`;
     setMessage(newMessage);
     setShowVars(false);
-
     setTimeout(() => {
       messageRef.current.focus();
       messageRef.current.selectionStart = cursorPos + normalizedVar.length + 3;
@@ -176,34 +159,25 @@ const Campaign = () => {
 
   const convertCDTToUTC = (cdtDateTime) => {
     if (!cdtDateTime) return null;
-    
-    // Create a date object from the input string (which is in local browser time)
     const date = new Date(cdtDateTime);
-    
-    // Convert to UTC and format as ISO string
     const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-    
-    // For CDT to UTC, we need to add 5 hours (CDT is UTC-5)
     utcDate.setHours(utcDate.getHours() + 5);
-    
     return utcDate.toISOString();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const STOP_TEXT = ' STOP to opt out.';
+    const STOP_TEXT = '\nSTOP to opt out.';
     const updatedMessage = message + STOP_TEXT;
 
     if (!csvFile || !updatedMessage || !twilioNumber || !campaignName || contacts.length === 0) {
       toast.error('Please fill in all fields and upload a CSV with valid contacts.');
       return;
     }
-
     if (message.length > MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH) {
       toast.error(`Message too long! Max allowed is ${MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH} characters.`);
       return;
     }
-
     setIsSubmitting(true);
     const payload = {
       campaign_name: campaignName,
@@ -211,10 +185,11 @@ const Campaign = () => {
       message_template: updatedMessage,
       contacts,
       scheduled_at: convertCDTToUTC(scheduledAt),
-      user_email: decodeURIComponent(email),
+      user_email: decodeURIComponent(email), // <-- This is sent to backend
       user_role: userRole
     };
 
+    console.log("Payload being sent to backend:", payload);
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/campaign/upload`, payload);
       toast.success('🚀 Campaign launched successfully!');
@@ -229,24 +204,28 @@ const Campaign = () => {
     }
   };
 
+  // Admins see a dropdown of all unique numbers; users see their assigned numbers
   const renderSenderNumberInput = () => {
     if (isLoadingUserData) {
       return <div className="loading-numbers">Loading sender options...</div>;
     }
-
     if (userRole === 'admin') {
       return (
-        <input
-          type="text"
+        <select
           value={twilioNumber}
-          onChange={(e) => setTwilioNumber(e.target.value)}
-          placeholder="Enter any Twilio number (e.g., +12223334444)"
+          onChange={e => setTwilioNumber(e.target.value)}
           required
           className="form-control"
-        />
+        >
+          <option value="" disabled>Select a Twilio number</option>
+          {allNumbers.map((num, idx) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
       );
     }
-
     if (assignedNumbers.length > 0) {
       return (
         <select
@@ -263,7 +242,6 @@ const Campaign = () => {
         </select>
       );
     }
-
     return (
       <input
         type="text"
@@ -300,7 +278,6 @@ const Campaign = () => {
                   className="form-control"
                 />
               </div>
-
               <div className="form-group">
                 <label>Schedule Time (optional)</label>
                 <input
@@ -311,12 +288,10 @@ const Campaign = () => {
                 />
                 <small className="timezone-note">Times are in CDT (UTC-5) and will be converted to UTC</small>
               </div>
-
               <div className="form-group">
                 <label>Sender Number</label>
                 {renderSenderNumberInput()}
               </div>
-
               <div className="form-group message-section">
                 <label>Message Content</label>
                 <div className="message-input-container">
@@ -356,7 +331,6 @@ const Campaign = () => {
                 </div>
               </div>
             </div>
-
             {/* Right Section */}
             <div className="form-right-section">
               <div className="file-upload-container">
@@ -387,7 +361,6 @@ const Campaign = () => {
                   </div>
                 )}
               </div>
-
               <div className="action-buttons">
                 <button
                   type="submit"
@@ -408,7 +381,6 @@ const Campaign = () => {
           </form>
         </div>
       </div>
-
       {/* Message Preview Modal */}
       {showPreview && (
         <div className="preview-modal" onClick={() => setShowPreview(false)}>
@@ -424,7 +396,6 @@ const Campaign = () => {
           </div>
         </div>
       )}
-
       <ToastContainer />
     </div>
   );

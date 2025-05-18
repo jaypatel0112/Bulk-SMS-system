@@ -1,33 +1,101 @@
-/* src/components/Sidebar.css */
+/* Sidebar.css - Modern, seamless sidebar */
+
 .sidebar {
-    width: 220px;
-    background-color: #1e293b;
-    color: white;
-    padding: 20px;
-    height: 100vh;
+  width: 240px;
+  background: linear-gradient(135deg, #1e293b 80%, #334155 100%);
+  color: #f1f5f9;
+  padding: 0;
+  height: 100vh;
+  box-shadow: 2px 0 12px rgba(30, 41, 59, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.sidebar-header {
+  padding: 32px 24px 18px 24px;
+  /* Remove any background or border */
+  background: transparent;
+  margin-bottom: 0.5rem;
+  border-radius: 0;
+  box-shadow: none;
+  text-align: left;
+}
+
+.sidebar-header h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.01em;
+}
+
+.user-email {
+  color: #cbd5e1;
+  font-size: 1rem;
+  margin: 0;
+  word-break: break-all;
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding: 0 0 0 0;
+  margin: 0;
+  flex: 1;
+}
+
+.sidebar-nav li {
+  margin: 10px 0;
+  border-radius: 6px;
+  transition: background 0.18s;
+}
+
+.sidebar-nav a {
+  color: #f1f5f9;
+  text-decoration: none;
+  font-size: 1.08rem;
+  font-weight: 500;
+  padding: 12px 28px;
+  display: block;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  position: relative;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+  background: #38bdf8;
+  color: #1e293b;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.08);
+}
+
+.sidebar-nav a.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 30px;
+  background: #38bdf8;
+  border-radius: 4px;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 60px;
+    padding: 18px 6px;
   }
-  
-  .sidebar h2 {
-    margin-bottom: 1.5rem;
+  .sidebar-header {
+    padding: 16px 8px 8px 8px;
   }
-  
-  .sidebar ul {
-    list-style: none;
-    padding: 0;
+  .sidebar-header h2 {
+    font-size: 1.1rem;
   }
-  
-  .sidebar li {
-    margin: 15px 0;
+  .sidebar-nav a {
+    font-size: 0.98rem;
+    padding: 8px 6px;
   }
-  
-  .sidebar a {
-    color: white;
-    text-decoration: none;
-    font-size: 1rem;
-    transition: color 0.2s;
-  }
-  
-  .sidebar a:hover {
-    color: #38bdf8;
-  }
-  
+}
