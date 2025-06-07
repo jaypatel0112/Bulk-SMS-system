@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import './AssignNumber.css'; // Optional external CSS for extra styles
 
 const AssignNumber = () => {
   const { email } = useParams();
+  const navigate = useNavigate();
+
   const [employees, setEmployees] = useState([]);
   const [twilioNumbers, setTwilioNumbers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -19,8 +22,8 @@ const AssignNumber = () => {
     setLoading(true);
     try {
       const [empRes, numberRes] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/user/role/2/all`, ),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`,),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/user/role/2/all`),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`),
       ]);
 
       setEmployees(Array.isArray(empRes.data) ? empRes.data : []);
@@ -41,14 +44,18 @@ const AssignNumber = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/twilionumber`, {
-        phone_number: phoneNumber,
-        user_id: selectedUserId,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/twilionumber`,
+        {
+          phone_number: phoneNumber,
+          user_id: selectedUserId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
 
       setMessage('Twilio number assigned successfully!');
       setPhoneNumber('');
@@ -84,9 +91,18 @@ const AssignNumber = () => {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Assign Twilio Number to User</h2>
-      <p className="mb-6">Logged in as: {decodeURIComponent(email)}</p>
+    <div className="p-6 max-w-5xl mx-auto bg-white rounded shadow animate-fadeIn">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Assign Twilio Number</h2>
+        <button
+          onClick={() => navigate(-1)}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
+        >
+          ← Back
+        </button>
+      </div>
+
+      <p className="mb-4 text-sm text-gray-600">Logged in as: <span className="font-medium">{decodeURIComponent(email)}</span></p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
@@ -129,7 +145,11 @@ const AssignNumber = () => {
       </button>
 
       {message && (
-        <p className={`mt-4 p-2 rounded ${message.includes('success') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <p
+          className={`mt-4 p-2 rounded ${
+            message.toLowerCase().includes('success') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}
+        >
           {message}
         </p>
       )}

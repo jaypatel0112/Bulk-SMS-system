@@ -23,14 +23,15 @@
 
 .dashboard-content {
   padding: 1.5rem;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 180px);
+  overflow-y: auto;
 }
 
 .campaign-form {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: 2rem;
-  height: 100%;
+  min-height: 100%;
   background: white;
   padding: 2rem;
   border-radius: 12px;
@@ -92,7 +93,7 @@
 }
 
 .message-input-container textarea {
-  height: 150px;
+  height: 120px;
   resize: none;
 }
 
@@ -107,7 +108,7 @@
   border: 2px dashed #e5e7eb;
   border-radius: 12px;
   transition: all 0.2s ease;
-  min-height: 250px;
+  min-height: 200px;
   cursor: pointer;
 }
 
@@ -154,7 +155,7 @@
 .action-buttons {
   display: flex;
   gap: 1rem;
-  margin-top: auto;
+  margin-top: 1rem;
 }
 
 .button {

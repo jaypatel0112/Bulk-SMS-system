@@ -25,10 +25,7 @@ function isBulkStopMessage(message) {
 const fetchLatestCampaignForNumber = async (twilio_number, contact_phone) => {
   try {
     const response = await axios.get(`${API_URL}/api/campaign/latestcampaign`, {
-      params: { 
-        twilio_number, 
-        contact_phone 
-      }
+      params: { twilio_number, contact_phone }
     });
     if (Array.isArray(response.data)) {
       return response.data.length > 0 ? response.data[0].campaign_name : null;
@@ -56,12 +53,20 @@ const Inbox = () => {
   const bottomRef = useRef(null);
   const conversationsRef = useRef([]);
   const selectedConversationRef = useRef(null);
-  const lastOpenedRef = useRef({});
 
-  useEffect(() => {
-    const saved = localStorage.getItem('conversationLastOpened');
-    lastOpenedRef.current = saved ? JSON.parse(saved) : {};
-  }, []);
+  // New Message Modal State
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [newMsgTo, setNewMsgTo] = useState("");
+  const [newMsgBody, setNewMsgBody] = useState("");
+  const [newMsgLoading, setNewMsgLoading] = useState(false);
+  const [newMsgError, setNewMsgError] = useState(null);
+
+  // Sender number dropdown state
+  const [twilioNumber, setTwilioNumber] = useState('');
+  const [userRole, setUserRole] = useState(null);
+  const [assignedNumbers, setAssignedNumbers] = useState([]);
+  const [allNumbers, setAllNumbers] = useState([]);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
   useEffect(() => {
     conversationsRef.current = conversations;
@@ -75,21 +80,31 @@ const Inbox = () => {
     return conv.contact_phone || "";
   };
 
-  const markConversationAsRead = useCallback((twilio_number, contact_phone) => {
-    const key = `${twilio_number}-${contact_phone}`;
-    lastOpenedRef.current[key] = Date.now();
-    localStorage.setItem('conversationLastOpened', JSON.stringify(lastOpenedRef.current));
-    setConversations(prev => prev.map(conv =>
-      conv.twilio_number === twilio_number && conv.contact_phone === contact_phone
-        ? { ...conv, has_unread: false }
-        : conv
-    ));
-    setSelectedConversation(prev =>
-      prev && prev.twilio_number === twilio_number && prev.contact_phone === contact_phone
-        ? { ...prev, has_unread: false }
-        : prev
-    );
-  }, []);
+  const markConversationAsRead = useCallback(async (twilio_number, contact_phone) => {
+    try {
+      const response = await axios.post(`${API_URL}/api/message/mark-conversation-read`, {
+        twilio_number,
+        contact_phone,
+        email: decodeURIComponent(email)
+      });
+      
+      if (response.data.success) {
+        setConversations(prev => prev.map(conv =>
+          conv.twilio_number === twilio_number && conv.contact_phone === contact_phone
+            ? { ...conv, has_unread: false }
+            : conv
+        ));
+        setSelectedConversation(prev =>
+          prev && prev.twilio_number === twilio_number && prev.contact_phone === contact_phone
+            ? { ...prev, has_unread: false }
+            : prev
+        );
+      }
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      setError("Failed to mark conversation as read. Please try again.");
+    }
+  }, [email]);
 
   const handleSortChange = (e) => {
     const value = e.target.value;
@@ -101,27 +116,15 @@ const Inbox = () => {
     try {
       const decodedEmail = decodeURIComponent(email);
       const response = await axios.get(`${API_URL}/api/inbox/${decodedEmail}`);
-
+      
       let newConversations = response.data
-        .map(conv => {
-          const key = `${conv.twilio_number}-${conv.contact_phone}`;
-          const lastRealMsg = [...(conv.messages || [])]
-            .reverse()
-            .find(msg => !isOptOutMessage(msg) && !isBulkStopMessage(msg));
-          const newestMessageTime = lastRealMsg
-            ? new Date(lastRealMsg.timestamp).getTime()
-            : 0;
-          const has_unread = lastOpenedRef.current[key]
-            ? newestMessageTime > lastOpenedRef.current[key]
-            : !!lastRealMsg;
-          return {
-            ...conv,
-            messages: conv.messages || [],
-            has_unread,
-            display_name: formatContactName(conv)
-          };
-        })
-        .filter(conv =>
+        .map(conv => ({
+          ...conv,
+          messages: conv.messages || [],
+          has_unread: conv.has_unread, // Use backend's has_unread directly
+          display_name: formatContactName(conv)
+        }))
+        .filter(conv => 
           conv.messages.some(
             msg => !isOptOutMessage(msg) && !isBulkStopMessage(msg)
           )
@@ -158,11 +161,13 @@ const Inbox = () => {
 
       const prevSelected = selectedConversationRef.current;
       if (prevSelected) {
-        const updatedConv = newConversations.find(c => 
+        const updatedConv = newConversations.find(c =>
           c.twilio_number === prevSelected.twilio_number && 
           c.contact_phone === prevSelected.contact_phone
         );
-        if (!updatedConv) {
+        if (updatedConv) {
+          setSelectedConversation(updatedConv);
+        } else {
           setSelectedConversation(null);
         }
       }
@@ -175,8 +180,22 @@ const Inbox = () => {
   }, [email, sortOption]);
 
   useEffect(() => {
+    if (!email) {
+      navigate("/login");
+      return;
+    }
     fetchConversations();
-  }, [sortOption, fetchConversations]);
+    const interval = setInterval(() => fetchConversations(true), 10000);
+    return () => clearInterval(interval);
+  }, [email, fetchConversations, navigate]);
+
+  useEffect(() => {
+    if (selectedConversation?.messages?.length) {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [selectedConversation]);
 
   const handleConversationSelect = useCallback(async (conversation) => {
     setSelectedConversation(conversation);
@@ -228,7 +247,6 @@ const Inbox = () => {
             : conv
         )
       );
-
       setReplyText("");
       setSuccess("Message sent successfully!");
       setTimeout(() => setSuccess(null), 3000);
@@ -239,24 +257,6 @@ const Inbox = () => {
       setError("Failed to send message. Please try again.");
     }
   };
-
-  useEffect(() => {
-    if (!email) {
-      navigate("/login");
-      return;
-    }
-    fetchConversations();
-    const interval = setInterval(() => fetchConversations(), 10000);
-    return () => clearInterval(interval);
-  }, [email, fetchConversations, navigate]);
-
-  useEffect(() => {
-    if (selectedConversation?.messages?.length) {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }
-  }, [selectedConversation]);
 
   const formatMessageDate = (timestamp) => {
     const messageDate = new Date(timestamp);
@@ -270,6 +270,133 @@ const Inbox = () => {
       return 'Yesterday';
     } else {
       return messageDate.toLocaleDateString();
+    }
+  };
+
+  // New Message Modal Functions
+  useEffect(() => {
+    if (!showNewMessageModal) return;
+
+    const fetchUserAndNumbers = async () => {
+      setIsLoadingUserData(true);
+      try {
+        const roleResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`,
+          { params: { email } }
+        );
+        const role = roleResponse.data.role;
+
+        if (role === 1 || roleResponse.data.user_id === null) {
+          setUserRole('admin');
+          const allNumbersResponse = await axios.get(
+            `${process.env.REACT_APP_API_URL}/api/twilionumber`
+          );
+          const uniqueNumbers = Array.from(
+            new Set((allNumbersResponse.data || []).map(n => n.phone_number))
+          );
+          setAllNumbers(uniqueNumbers);
+          if (uniqueNumbers.length > 0) setTwilioNumber(uniqueNumbers[0]);
+        } else {
+          setUserRole('user');
+          const numbersResponse = await axios.get(
+            `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
+            { params: { email } }
+          );
+          let numbers = [];
+          if (Array.isArray(numbersResponse.data.numbers)) {
+            numbers = numbersResponse.data.numbers;
+          } else if (Array.isArray(numbersResponse.data)) {
+            numbers = numbersResponse.data;
+          }
+          setAssignedNumbers(numbers);
+          if (numbers.length > 0) setTwilioNumber(numbers[0]);
+        }
+      } catch (error) {
+        setAllNumbers([]);
+        setAssignedNumbers([]);
+        setTwilioNumber('');
+      } finally {
+        setIsLoadingUserData(false);
+      }
+    };
+
+    fetchUserAndNumbers();
+  }, [showNewMessageModal, email]);
+
+  const renderSenderNumberInput = () => {
+    if (isLoadingUserData) {
+      return <div className="loading-numbers">Loading sender options...</div>;
+    }
+    if (userRole === 'admin') {
+      return (
+        <select
+          value={twilioNumber}
+          onChange={e => setTwilioNumber(e.target.value)}
+          required
+          className="form-control"
+        >
+          <option value="" disabled>Select a Twilio number</option>
+          {allNumbers.map((num, idx) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    if (assignedNumbers.length > 0) {
+      return (
+        <select
+          value={twilioNumber}
+          onChange={(e) => setTwilioNumber(e.target.value)}
+          required
+          className="form-control"
+        >
+          {assignedNumbers.map((number, index) => (
+            <option key={index} value={number}>
+              {number}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    return (
+      <input
+        type="text"
+        value="No numbers assigned - contact admin"
+        disabled
+        className="form-control disabled-input"
+      />
+    );
+  };
+
+  const handleSendNewMessage = async () => {
+    setNewMsgError(null);
+    if (!newMsgTo.trim() || !newMsgBody.trim() || !twilioNumber) {
+      setNewMsgError("All fields are required.");
+      return;
+    }
+    setNewMsgLoading(true);
+    try {
+      const decodedEmail = decodeURIComponent(email);
+      await axios.post(`${API_URL}/api/message/single`, {
+        fromNumber: twilioNumber,
+        toNumber: newMsgTo,
+        message: newMsgBody,
+        email: decodedEmail
+      });
+      setShowNewMessageModal(false);
+      setNewMsgTo("");
+      setNewMsgBody("");
+      setSuccess("Message sent successfully!");
+      setTimeout(() => setSuccess(null), 3000);
+      fetchConversations(true);
+    } catch (err) {
+      setNewMsgError(
+        err.response?.data?.error || "Failed to send message. Please try again."
+      );
+    } finally {
+      setNewMsgLoading(false);
     }
   };
 
@@ -289,10 +416,20 @@ const Inbox = () => {
       <Sidebar email={decodeURIComponent(email)} />
       <div className="dashboard-main">
         <div className="dashboard-header">
-          <h2>💬 Inbox ({decodeURIComponent(email)})</h2>
+          <h2>Inbox ({decodeURIComponent(email)})</h2>
+          <button
+            className="new-message-btn"
+            onClick={() => setShowNewMessageModal(true)}
+            title="Send a new message"
+            style={{ marginLeft: "auto" }}
+          >
+            New Message
+          </button>
           {error && <div className="error-banner">{error}</div>}
           {success && <div className="success-banner">{success}</div>}
-          {newMessageAlert}
+          {newMessageAlert && (
+            <div className="new-message-alert">New messages received!</div>
+          )}
         </div>
         <div className="inbox-container">
           <div className="inbox-sidebar">
@@ -418,32 +555,66 @@ const Inbox = () => {
                   <textarea
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
-                    placeholder="Type your reply..."
-                    rows={2}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        sendReply();
-                      }
-                    }}
+                    placeholder="Type your message..."
                   />
-                  <button
-                    className="send-button"
-                    onClick={sendReply}
-                    disabled={!replyText.trim()}
-                  >
-                    Send
-                  </button>
+                  <button onClick={sendReply}>Send</button>
                 </div>
               </>
             ) : (
-              <div className="no-conversation-selected">
-                <p>Select a conversation to view messages.</p>
-              </div>
+              <div className="no-chat-selected">Select a conversation to view messages</div>
             )}
           </div>
         </div>
       </div>
+
+      {/* New Message Modal */}
+      {showNewMessageModal && (
+        <div className="modal-overlay">
+          <div className="modal-content new-message-modal">
+            <h3>Send New Message</h3>
+            <label>
+              From Number:
+              {renderSenderNumberInput()}
+            </label>
+            <label>
+              To Number:
+              <input
+                type="text"
+                value={newMsgTo}
+                onChange={e => setNewMsgTo(e.target.value)}
+                placeholder="+12245556666"
+                className="form-control"
+              />
+            </label>
+            <label>
+              Message:
+              <textarea
+                value={newMsgBody}
+                onChange={e => setNewMsgBody(e.target.value)}
+                placeholder="Type your message..."
+                className="form-control"
+              />
+            </label>
+            {newMsgError && <div className="error-banner">{newMsgError}</div>}
+            <div className="modal-actions">
+              <button
+                onClick={handleSendNewMessage}
+                disabled={newMsgLoading}
+                className="send-btn"
+              >
+                {newMsgLoading ? "Sending..." : "Send"}
+              </button>
+              <button
+                onClick={() => setShowNewMessageModal(false)}
+                disabled={newMsgLoading}
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

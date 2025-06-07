@@ -9,11 +9,15 @@
   flex: 1;
   padding: 2rem;
   background-color: #f9f9f9;
-  overflow-y: auto;
+  overflow: hidden; /* Changed from overflow-y: auto */
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Added fixed height */
 }
 
 .dashboard-header {
   margin-bottom: 2rem;
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .dashboard-header h1 {
@@ -72,11 +76,142 @@
   background: #2980b9;
 }
 
-/* Cards Grid */
-.campaigns-list, .users-list {
+/* Stats Section - Fixed positioning */
+.stats-section {
+  margin-bottom: 2rem;
+  flex-shrink: 0; /* Prevent stats from shrinking */
+}
+
+.stats-section h2 {
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #3498db;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Cards Grid - Improved scrolling */
+.campaigns-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  overflow-y: auto;
+  flex: 1; /* Take remaining space */
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  max-height: calc(100vh - 400px); /* Dynamic max height */
+  min-height: 300px; /* Minimum height */
+}
+
+/* Custom scrollbar for campaigns list */
+.campaigns-list::-webkit-scrollbar {
+  width: 12px;
+}
+
+.campaigns-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.campaigns-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+
+.campaigns-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Firefox scrollbar styling */
+.campaigns-list {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* User Management Section - Improved scrolling */
+.user-management-section {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Take remaining space */
+}
+
+.user-management-section h2 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.users-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  overflow-y: auto;
+  flex: 1; /* Take remaining space */
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  max-height: calc(100vh - 400px); /* Dynamic max height */
+  min-height: 300px; /* Minimum height */
+}
+
+/* Custom scrollbar for users list */
+.users-list::-webkit-scrollbar {
+  width: 12px;
+}
+
+.users-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.users-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+
+.users-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Firefox scrollbar styling for users list */
+.users-list {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
 }
 
 /* Campaign Card */
@@ -87,6 +222,7 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: all 0.3s ease;
+  height: fit-content;
 }
 
 .campaign-card:hover {
@@ -131,6 +267,11 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 120px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .user-card:hover {
@@ -169,8 +310,24 @@
   margin-bottom: 1.5rem;
 }
 
+/* Empty state styling for scrollable containers */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px dashed #dee2e6;
+  color: #6c757d;
+}
+
+.empty-state p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
 /* Buttons */
-.create-button, .back-button {
+.create-button, .back-button, .create-btn {
   background: #3498db;
   color: white;
   border: none;
@@ -181,7 +338,7 @@
   transition: background 0.2s ease;
 }
 
-.create-button:hover, .back-button:hover {
+.create-button:hover, .back-button:hover, .create-btn:hover {
   background: #2980b9;
 }
 
@@ -193,15 +350,26 @@
 @media (max-width: 768px) {
   .campaigns-list, .users-list {
     grid-template-columns: 1fr;
+    max-height: calc(100vh - 350px);
+    min-height: 250px;
   }
   
   .dashboard-main {
     padding: 1rem;
   }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Admin-specific user card styles */
 .user-card.admin-user {
+  border-left: 4px solid #3498db;
+  background-color: #f8fafc;
+}
+
+.user-card.admin {
   border-left: 4px solid #3498db;
   background-color: #f8fafc;
 }
@@ -233,7 +401,8 @@
   transform: none;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
-.delete-user-button {
+
+.delete-user-button, .delete-btn {
   background-color: #ff4444;
   color: white;
   border: none;
@@ -244,19 +413,18 @@
   transition: background-color 0.2s;
 }
 
-.delete-user-button:hover {
+.delete-user-button:hover, .delete-btn:hover {
   background-color: #cc0000;
-}
-
-.user-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
 }
 
 .user-card-content {
   width: 100%;
   cursor: pointer;
+}
+
+.user-info {
+  flex: 1;
+  width: 100%;
 }
 
 .logout-button {
@@ -277,12 +445,14 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-shrink: 0; /* Prevent header actions from shrinking */
 }
 
 .dashboard-stats-row {
   display: flex;
   margin-bottom: 2rem;
 }
+
 .dashboard-stat-box {
   flex: 1;
   background: linear-gradient(90deg, #0066b2 0%, #0073e6 100%);
@@ -293,15 +463,18 @@
   text-align: center;
   font-size: 1.2rem;
 }
+
 .dashboard-stat-box:last-child {
   margin-right: 0;
 }
+
 .stat-label {
   display: block;
   font-size: 1rem;
   margin-bottom: 0.5rem;
   opacity: 0.8;
 }
+
 .stat-value {
   display: block;
   font-size: 2.4rem;
@@ -309,46 +482,6 @@
   letter-spacing: 2px;
 }
 
-.stats-section {
-  margin-bottom: 2rem;
-}
-
-.stats-section h2 {
-  margin-bottom: 1rem;
-  color: #2c3e50;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-  text-align: center;
-  transition: transform 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-}
-
-.stat-value {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #3498db;
-  margin-bottom: 0.5rem;
-}
-
-.stat-label {
-  color: #7f8c8d;
-  font-size: 1rem;
-  font-weight: 500;
-}
 .time-filter-dropdown {
   padding: 8px 12px;
   border-radius: 4px;

@@ -12,9 +12,19 @@ const CampaignDetails = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusNumbers, setStatusNumbers] = useState({
+    type: null,
+    numbers: [],
+    loading: false,
+    error: null
+  });
+  const [statusCounts, setStatusCounts] = useState({
+    delivered: 0,
+    failed: 0,
+    queued: 0
+  });
   const contactsPerPage = 50;
 
-  // Extract email from URL path (e.g., /dashboard/jp@ptechpartners.com/campaign/123)
   const getEmailFromPath = () => {
     const pathParts = location.pathname.split('/');
     if (pathParts.includes('dashboard') && pathParts.length > 2) {
@@ -31,12 +41,9 @@ const CampaignDetails = () => {
 
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/campaign/details/${id}`,
-        {
-          params: { email }
-        }
+        { params: { email } }
       );
 
-      // Basic ownership check (compare with email from URL)
       if (email && res.data.user_email && res.data.user_email !== email) {
         throw new Error("You don't have permission to view this campaign");
       }
@@ -45,7 +52,6 @@ const CampaignDetails = () => {
     } catch (err) {
       console.error("Error fetching campaign:", err);
       setError(err.response?.data?.error || err.message || "Failed to load campaign");
-      
       if (err.message.includes("permission")) {
         navigate('/dashboard');
       }
@@ -54,14 +60,62 @@ const CampaignDetails = () => {
     }
   };
 
+  const fetchStatusCounts = async () => {
+    const statuses = ['delivered', 'failed', 'queued'];
+    const counts = {};
+
+    for (const status of statuses) {
+      try {
+        const res = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/campaign/status-numbers/${id}`,
+          { params: { status } }
+        );
+        counts[status] = res.data.numbers?.length || 0;
+      } catch (err) {
+        console.error(`Error fetching count for ${status}:`, err);
+        counts[status] = 0;
+      }
+    }
+
+    setStatusCounts(counts);
+  };
+
+  const fetchStatusNumbers = async (statusType) => {
+    try {
+      setStatusNumbers(prev => ({
+        ...prev,
+        type: statusType,
+        loading: true,
+        error: null,
+        numbers: []
+      }));
+
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/campaign/status-numbers/${id}`,
+        { params: { status: statusType } }
+      );
+
+      setStatusNumbers(prev => ({
+        ...prev,
+        numbers: res.data.numbers || [],
+        loading: false
+      }));
+    } catch (err) {
+      console.error(`Error fetching ${statusType} numbers:`, err);
+      setStatusNumbers(prev => ({
+        ...prev,
+        error: err.response?.data?.error || err.message || `Failed to load ${statusType} numbers`,
+        loading: false
+      }));
+    }
+  };
+
   const refreshMessageStatuses = async () => {
     try {
       const email = getEmailFromPath();
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/campaign/details/${id}`,
-        {
-          params: { email }
-        }
+        { params: { email } }
       );
       setCampaign(res.data);
     } catch (err) {
@@ -69,16 +123,31 @@ const CampaignDetails = () => {
     }
   };
 
-  const calculateTotal = (report) => {
-    const delivered = parseInt(report?.delivered) || 0;
-    const failed = parseInt(report?.failed) || 0;
-    const queued = parseInt(report?.queued) || 0;
+  const calculateTotal = (counts) => {
+    const delivered = parseInt(counts?.delivered) || 0;
+    const failed = parseInt(counts?.failed) || 0;
+    const queued = parseInt(counts?.queued) || 0;
     return delivered + failed + queued;
+  };
+
+  const closeStatusNumbers = () => {
+    setStatusNumbers({
+      type: null,
+      numbers: [],
+      loading: false,
+      error: null
+    });
   };
 
   useEffect(() => {
     fetchCampaign();
-    const interval = setInterval(refreshMessageStatuses, 30000);
+    fetchStatusCounts();
+
+    const interval = setInterval(() => {
+      refreshMessageStatuses();
+      fetchStatusCounts();
+    }, 30000);
+
     return () => clearInterval(interval);
   }, [id, location.pathname]);
 
@@ -114,7 +183,49 @@ const CampaignDetails = () => {
 
   return (
     <div className="campaign-container">
+      {statusNumbers.type && (
+        <div className="status-numbers-modal">
+          <div className="status-numbers-content">
+            <div className="status-numbers-header">
+              <h3>
+                {statusNumbers.type.charAt(0).toUpperCase() + statusNumbers.type.slice(1)} Numbers
+                <span className="close-btn" onClick={closeStatusNumbers}>×</span>
+              </h3>
+            </div>
+
+            {statusNumbers.loading ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading {statusNumbers.type} numbers...</p>
+              </div>
+            ) : statusNumbers.error ? (
+              <div className="error-message">
+                {statusNumbers.error}
+                <button onClick={() => fetchStatusNumbers(statusNumbers.type)}>Retry</button>
+              </div>
+            ) : (
+              <div className="numbers-list-container">
+                <p className="count-info">Total: {statusNumbers.numbers.length} numbers</p>
+                <div className="numbers-list">
+                  {statusNumbers.numbers.map((number, index) => (
+                    <div key={index} className="number-item">
+                      {number}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="campaign-header">
+        <button
+          className="back-button"
+          onClick={() => navigate(-1)}
+        >
+          ← Back
+        </button>
         <h2>📢 Campaign: {campaign.campaign_name}</h2>
         {campaign.user_email && (
           <p className="owner-badge">Owner: {campaign.user_email}</p>
@@ -154,23 +265,26 @@ const CampaignDetails = () => {
               <div className="stats-grid">
                 <div className="stat-box">
                   <span className="stat-label">Total Messages</span>
-                  <span className="stat-value">{calculateTotal(campaign.report)}</span>
+                  <span className="stat-value">{calculateTotal(statusCounts)}</span>
                 </div>
-                <div className="stat-box">
+                <div className="stat-box clickable" onClick={() => fetchStatusNumbers('delivered')}>
                   <span className="stat-label">Delivered</span>
-                  <span className="stat-value">{campaign.report?.delivered || 0}</span>
+                  <span className="stat-value">{statusCounts.delivered}</span>
                 </div>
-                <div className="stat-box">
+                <div className="stat-box clickable" onClick={() => fetchStatusNumbers('failed')}>
                   <span className="stat-label">Failed</span>
-                  <span className="stat-value">{campaign.report?.failed || 0}</span>
+                  <span className="stat-value">{statusCounts.failed}</span>
                 </div>
-                <div className="stat-box">
+                <div className="stat-box clickable" onClick={() => fetchStatusNumbers('queued')}>
                   <span className="stat-label">Queued</span>
-                  <span className="stat-value">{campaign.report?.queued || 0}</span>
+                  <span className="stat-value">{statusCounts.queued}</span>
                 </div>
               </div>
 
-              <button onClick={refreshMessageStatuses} className="refresh-button">
+              <button onClick={() => {
+                refreshMessageStatuses();
+                fetchStatusCounts();
+              }} className="refresh-button">
                 🔄 Refresh Status
               </button>
             </div>
@@ -186,7 +300,7 @@ const CampaignDetails = () => {
               Showing {currentContacts.length} of {campaign.contacts.length} contacts
             </div>
           </div>
-          
+
           <div className="table-container">
             <table className="contacts-table">
               <thead>
