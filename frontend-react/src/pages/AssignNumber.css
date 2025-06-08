@@ -26,6 +26,10 @@ body {
 }
 
 /* Header styling */
+.flex.justify-between.items-center.mb-6 {
+  margin-top: 2rem !important;
+}
+
 .text-2xl.font-bold {
   color: #1f2937 !important;
   letter-spacing: -0.025em !important;
@@ -329,12 +333,13 @@ body {
   border-radius: 8px !important;
 }
 
-/* Enhanced action buttons */
+/* Enhanced action buttons - SHIFTED DOWN */
 .actions {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
   align-items: center;
+  margin-top: 0.5rem;
 }
 
 .actions button {

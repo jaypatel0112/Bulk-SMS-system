@@ -21,7 +21,8 @@ const CampaignDetails = () => {
   const [statusCounts, setStatusCounts] = useState({
     delivered: 0,
     failed: 0,
-    queued: 0
+    queued: 0,
+    replies: 0
   });
   const contactsPerPage = 50;
 
@@ -77,6 +78,17 @@ const CampaignDetails = () => {
       }
     }
 
+    // Fetch replies count
+    try {
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/campaign/replies-count/${id}`
+      );
+      counts.replies = res.data.replies || 0;
+    } catch (err) {
+      console.error("Error fetching replies count:", err);
+      counts.replies = 0;
+    }
+
     setStatusCounts(counts);
   };
 
@@ -105,6 +117,35 @@ const CampaignDetails = () => {
       setStatusNumbers(prev => ({
         ...prev,
         error: err.response?.data?.error || err.message || `Failed to load ${statusType} numbers`,
+        loading: false
+      }));
+    }
+  };
+
+  const fetchRepliedNumbers = async () => {
+    try {
+      setStatusNumbers(prev => ({
+        ...prev,
+        type: 'replied',
+        loading: true,
+        error: null,
+        numbers: []
+      }));
+
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/campaign/replied-numbers/${id}`
+      );
+
+      setStatusNumbers(prev => ({
+        ...prev,
+        numbers: res.data.numbers || [],
+        loading: false
+      }));
+    } catch (err) {
+      console.error("Error fetching replied numbers:", err);
+      setStatusNumbers(prev => ({
+        ...prev,
+        error: err.response?.data?.error || err.message || "Failed to load replied numbers",
         loading: false
       }));
     }
@@ -201,7 +242,7 @@ const CampaignDetails = () => {
             ) : statusNumbers.error ? (
               <div className="error-message">
                 {statusNumbers.error}
-                <button onClick={() => fetchStatusNumbers(statusNumbers.type)}>Retry</button>
+                <button onClick={() => statusNumbers.type === 'replied' ? fetchRepliedNumbers() : fetchStatusNumbers(statusNumbers.type)}>Retry</button>
               </div>
             ) : (
               <div className="numbers-list-container">
@@ -278,6 +319,10 @@ const CampaignDetails = () => {
                 <div className="stat-box clickable" onClick={() => fetchStatusNumbers('queued')}>
                   <span className="stat-label">Queued</span>
                   <span className="stat-value">{statusCounts.queued}</span>
+                </div>
+                <div className="stat-box clickable" onClick={() => fetchRepliedNumbers()}>
+                  <span className="stat-label">Replies</span>
+                  <span className="stat-value">{statusCounts.replies}</span>
                 </div>
               </div>
 
