@@ -1,0 +1,8 @@
+README.rst
+setup.cfg
+setup.py
+aws_wsgi.egg-info/PKG-INFO
+aws_wsgi.egg-info/SOURCES.txt
+aws_wsgi.egg-info/dependency_links.txt
+aws_wsgi.egg-info/top_level.txt
+awsgi/__init__.py

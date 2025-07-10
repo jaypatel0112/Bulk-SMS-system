@@ -1,0 +1,12 @@
+flask==2.3.2
+psycopg2-binary==2.9.6
+python-dotenv==1.0.0
+twilio==8.3.0
+requests==2.31.0
+gunicorn==20.1.0  # For production WSGI server
+zappa==0.57.0  # For Lambda deployment
+awscli==1.27.0  # For AWS configuration
+boto3==1.26.0  # For AWS services integration
+Flask
+Flask-Cors
+aws-wsgi

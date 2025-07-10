@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "choco": "^0.2.1",
-    "react-router-dom": "^7.5.0"
-  }
-}

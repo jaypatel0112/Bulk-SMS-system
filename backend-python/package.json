@@ -1,0 +1,32 @@
+{
+  "name": "backend-python",
+  "version": "1.0.0",
+  "proxy": "http://localhost:5000",
+  "type": "module",
+  "main": "lambda.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@vendia/serverless-express": "^4.12.6",
+    "aws-sdk": "^2.1692.0",
+    "aws-serverless-express": "^3.4.0",
+    "axios": "^1.8.4",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "luxon": "^3.6.1",
+    "multer": "^1.4.5-lts.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.14.1",
+    "pg-format": "^1.0.4",
+    "twilio": "^5.5.2"
+  }
+}
