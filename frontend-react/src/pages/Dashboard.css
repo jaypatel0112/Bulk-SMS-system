@@ -1,52 +1,671 @@
+/* Dashboard.css - Full Responsive, Proper Padding & Scrollbars */
+/* Import modern fonts */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
+
+/* Root Variables */
+:root {
+  --sidebar-width: 240px;
+  --header-height: 100px;
+  --primary-blue: #002294;
+  --secondary-blue: #6A84FC;
+  --border-color: #E5E7EB;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --container-max-width: 1150px;
+}
+
 /* Dashboard Layout */
 .dashboard-container {
   display: flex;
   min-height: 100vh;
   width: 100%;
+  background-color: #F9FAFB;
+  font-family: "Montserrat", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
 }
 
+/* Main Content Area */
 .dashboard-main {
   flex: 1;
-  padding: 2rem;
-  background-color: #f9f9f9;
-  overflow: hidden; /* Changed from overflow-y: auto */
+  padding: 0;
+  margin-top: var(--header-height);
+  background-color: #F9FAFB;
+  min-height: 0;
+  overflow-y: visible;
+  height: auto;
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Added fixed height */
+  align-items: center;
 }
 
-.dashboard-header {
-  margin-bottom: 2rem;
-  flex-shrink: 0; /* Prevent header from shrinking */
+/* Centered, Gapped, and Well-Padded Sections */
+.user-management-section,
+.stats-section-new,
+.campaigns-section-new {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 5px auto;
+  padding: 32px 32px 32px 32px; /* top, right, bottom, left */
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid #F3F4F6;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-.dashboard-header h1 {
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
+/* User Management Section - Scrollable List */
+.user-management-section {
+  max-height: 500px; /* Ensures the section does not grow forever */
+  overflow: hidden;
 }
 
-.user-email {
-  color: #7f8c8d;
-  font-size: 0.9rem;
+.users-container {
+  flex: 1 1 auto;
+  max-height: 350px; /* Ensures scrolling if there are many users */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 8px 16px 8px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
 }
 
-/* Loading States */
+.users-container::-webkit-scrollbar {
+  width: 8px;
+}
+.users-container::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 4px;
+}
+
+/* Extra gap on very large screens */
+@media (min-width: 1400px) {
+  .user-management-section,
+  .stats-section-new,
+  .campaigns-section-new {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+/* Tighter gap on mobile */
+@media (max-width: 900px) {
+  .user-management-section,
+  .stats-section-new,
+  .campaigns-section-new {
+    padding: 16px;
+  }
+  .users-container,
+  .campaigns-container-new {
+    padding: 12px;
+  }
+  .user-management-section {
+    max-height: 400px;
+  }
+  .users-container {
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 600px) {
+  .user-management-section,
+  .stats-section-new,
+  .campaigns-section-new {
+    padding: 8px;
+  }
+  .users-container,
+  .campaigns-container-new {
+    padding: 6px;
+  }
+  .user-management-section {
+    max-height: 300px;
+  }
+  .users-container {
+    max-height: 160px;
+  }
+}
+
+/* User Profile Section */
+.user-profile-section {
+  width: 100%;
+  max-width: 1210px;
+  margin: 5px auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.user-profile-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100%;
+}
+
+.user-profile-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-avatar-large {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 20px;
+  color: white;
+  flex-shrink: 0;
+  background: #6A84FC47;
+}
+
+.user-profile-details h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.user-profile-details p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.back-to-users-btn {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-to-users-btn:hover {
+  background: #2563EB;
+  transform: translateY(-1px);
+}
+
+.back-icon {
+  font-size: 16px;
+}
+
+/* Stats Section */
+.stats-header-new {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.stats-header-new h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.time-filter-dropdown-new {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.stats-grid-new {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.stat-card-new {
+  background: #F8FAFF;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.stat-content-new {
+  flex: 1;
+}
+
+.stat-label-new {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.stat-value-new {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--primary-blue);
+  line-height: 1;
+}
+
+.stat-icon-new {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-blue);
+}
+
+/* Campaigns Section */
+.campaigns-header-new {
+  margin-bottom: 24px;
+}
+
+.campaigns-header-new h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Campaigns List Container - Padding & Scrollbar */
+.campaigns-container-new {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  max-height: 240px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+}
+
+.campaigns-container-new::-webkit-scrollbar {
+  width: 8px;
+}
+.campaigns-container-new::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 4px;
+}
+
+.campaigns-grid-new {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.campaign-card-new {
+  background: #F9FAFB;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  min-width: 0;
+}
+
+.campaign-card-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-blue);
+}
+
+.campaign-header-new {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.campaign-header-new h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaign-arrow {
+  color: var(--text-secondary);
+  margin-left: 8px;
+}
+
+.campaign-footer-new {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campaign-status-new {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  width: fit-content;
+}
+
+.campaign-status-new.sent {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.campaign-status-new.inprogress,
+.campaign-status-new.in-progress {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.campaign-status-new.draft {
+  background-color: #E0F2FE;
+  color: #1E40AF;
+}
+
+.campaign-status-new.failed {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.campaign-status-new.unknown {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.campaign-date-new {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* User Management List - Grid */
+.user-management-section h2 {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.user-card {
+  height: 160px;
+  background: #F9FAFB;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-blue);
+}
+
+.user-card.admin {
+  border-left: 4px solid;
+  border-left-color: #2D5DFD;
+  background: rgba(106, 132, 252, 0.12);
+  border-color: #BFDBFE;
+}
+
+.user-card.admin:hover {
+  background: rgba(106, 132, 252, 0.12);
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.user-avatar {
+  width: 32px; /* or your preferred size */
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+  background: #6A84FC47; /* 28% opacity */
+}
+
+
+.user-info h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Buttons */
+.user-button {
+  width: 124px;
+  height: 41px;
+  border-radius: 37.81px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11.19px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.45px solid transparent;
+  margin-top: auto;
+}
+
+.delete-button {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: #D1D5DB;
+}
+
+.delete-button:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.logout-button {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.logout-button:hover {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  grid-column: 1 / -1;
+  background: #F8FAFC;
+  border-radius: 16px;
+  border: 2px dashed #CBD5E0;
+  color: var(--text-secondary);
+}
+
+.empty-state h3 {
+  color: #374151;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.create-button {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.create-button:hover {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.stat-bg-1 {
+  background-image: url('../bgImages/Card_1.png');
+  background-repeat: no-repeat;
+  background-size: cover; /* or contain, or e.g. 80% auto */
+  background-position: right bottom;
+}
+
+.stat-bg-2 {
+  background-image: url('../bgImages/Card_2.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: right bottom;
+}
+
+.stat-bg-3 {
+  background-image: url('../bgImages/Card_3.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: right bottom;
+}
+
+.stat-icon-img {
+  width: 35.52px;
+  height: 35.52px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .stats-grid-new,
+  .users-grid,
+  .campaigns-grid-new {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .stats-grid-new,
+  .users-grid,
+  .campaigns-grid-new {
+    grid-template-columns: 1fr;
+  }
+  .user-management-section,
+  .stats-section-new,
+  .campaigns-section-new {
+    padding: 16px;
+  }
+  .users-container,
+  .campaigns-container-new {
+    padding: 12px;
+  }
+  .user-management-section {
+    max-height: 400px;
+  }
+  .users-container {
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 600px) {
+  .user-profile-section,
+  .user-management-section,
+  .stats-section-new,
+  .campaigns-section-new {
+    padding-left: 8px;
+    padding-right: 8px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .user-profile-card,
+  .stats-section-new,
+  .campaigns-container-new {
+    padding: 12px;
+  }
+  .users-container,
+  .campaigns-container-new {
+    padding: 6px;
+  }
+  .user-management-section {
+    max-height: 300px;
+  }
+  .users-container {
+    max-height: 160px;
+  }
+}
+
+/* Loading and Error States */
 .dashboard-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
+  background: #F9FAFB;
 }
 
 .spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top: 4px solid #3498db;
   width: 40px;
   height: 40px;
+  border: 4px solid #E5E7EB;
+  border-top: 4px solid var(--primary-blue);
+  border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 20px;
 }
 
 @keyframes spin {
@@ -54,449 +673,23 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Error States */
 .dashboard-error {
-  text-align: center;
-  padding: 2rem;
-  color: #e74c3c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #F9FAFB;
+  color: var(--text-primary);
 }
 
 .retry-button {
-  background: #3498db;
+  background: var(--primary-blue);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: background 0.2s ease;
-}
-
-.retry-button:hover {
-  background: #2980b9;
-}
-
-/* Stats Section - Fixed positioning */
-.stats-section {
-  margin-bottom: 2rem;
-  flex-shrink: 0; /* Prevent stats from shrinking */
-}
-
-.stats-section h2 {
-  margin-bottom: 1rem;
-  color: #2c3e50;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.stat-card {
-  background: white;
+  padding: 12px 24px;
   border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-  text-align: center;
-  transition: transform 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-}
-
-.stat-value {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #3498db;
-  margin-bottom: 0.5rem;
-}
-
-.stat-label {
-  color: #7f8c8d;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-/* Cards Grid - Improved scrolling */
-.campaigns-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  overflow-y: auto;
-  flex: 1; /* Take remaining space */
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: white;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  max-height: calc(100vh - 400px); /* Dynamic max height */
-  min-height: 300px; /* Minimum height */
-}
-
-/* Custom scrollbar for campaigns list */
-.campaigns-list::-webkit-scrollbar {
-  width: 12px;
-}
-
-.campaigns-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 6px;
-}
-
-.campaigns-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
-}
-
-.campaigns-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Firefox scrollbar styling */
-.campaigns-list {
-  scrollbar-width: thin;
-  scrollbar-color: #888 #f1f1f1;
-}
-
-/* User Management Section - Improved scrolling */
-.user-management-section {
-  margin-top: 2rem;
-  display: flex;
-  flex-direction: column;
-  flex: 1; /* Take remaining space */
-}
-
-.user-management-section h2 {
-  color: #2c3e50;
-  margin-bottom: 1rem;
-  flex-shrink: 0;
-}
-
-.users-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  overflow-y: auto;
-  flex: 1; /* Take remaining space */
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: white;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  max-height: calc(100vh - 400px); /* Dynamic max height */
-  min-height: 300px; /* Minimum height */
-}
-
-/* Custom scrollbar for users list */
-.users-list::-webkit-scrollbar {
-  width: 12px;
-}
-
-.users-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 6px;
-}
-
-.users-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
-}
-
-.users-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Firefox scrollbar styling for users list */
-.users-list {
-  scrollbar-width: thin;
-  scrollbar-color: #888 #f1f1f1;
-}
-
-/* Campaign Card */
-.campaign-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  height: fit-content;
-}
-
-.campaign-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.campaign-card h3 {
-  color: #3498db;
-  margin-bottom: 0.5rem;
-}
-
-.campaign-date {
-  color: #7f8c8d;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-}
-
-.campaign-status {
-  font-size: 0.8rem;
-  margin-top: 0.8rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-.campaign-status.active {
-  background: #e6f7ee;
-  color: #28a745;
-}
-
-.campaign-status.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-/* User Card */
-.user-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-height: 120px;
-  height: fit-content;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.user-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.user-card h3 {
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-.user-role {
-  color: #7f8c8d;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-}
-
-/* Empty States */
-.no-campaigns, .no-users {
-  text-align: center;
-  padding: 3rem;
-  grid-column: 1 / -1;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-
-.no-campaigns h3, .no-users h3 {
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-.no-campaigns p, .no-users p {
-  color: #7f8c8d;
-  margin-bottom: 1.5rem;
-}
-
-/* Empty state styling for scrollable containers */
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 3rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 2px dashed #dee2e6;
-  color: #6c757d;
-}
-
-.empty-state p {
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-}
-
-/* Buttons */
-.create-button, .back-button, .create-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.create-button:hover, .back-button:hover, .create-btn:hover {
-  background: #2980b9;
-}
-
-.back-button {
-  margin-right: 15px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .campaigns-list, .users-list {
-    grid-template-columns: 1fr;
-    max-height: calc(100vh - 350px);
-    min-height: 250px;
-  }
-  
-  .dashboard-main {
-    padding: 1rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Admin-specific user card styles */
-.user-card.admin-user {
-  border-left: 4px solid #3498db;
-  background-color: #f8fafc;
-}
-
-.user-card.admin {
-  border-left: 4px solid #3498db;
-  background-color: #f8fafc;
-}
-
-.admin-badge {
-  display: inline-block;
-  background-color: #3498db;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  margin-left: 8px;
-}
-
-.user-note {
-  color: #7f8c8d;
-  font-size: 0.8rem;
-  margin-top: 8px;
-  font-style: italic;
-}
-
-/* Disable pointer events for admin cards */
-.user-card.admin-user {
-  cursor: default;
-  opacity: 0.9;
-}
-
-.user-card.admin-user:hover {
-  transform: none;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-
-.delete-user-button, .delete-btn {
-  background-color: #ff4444;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background-color 0.2s;
-}
-
-.delete-user-button:hover, .delete-btn:hover {
-  background-color: #cc0000;
-}
-
-.user-card-content {
-  width: 100%;
-  cursor: pointer;
-}
-
-.user-info {
-  flex: 1;
-  width: 100%;
-}
-
-.logout-button {
-  background-color: #dc3545;
-  color: white;
-  padding: 6px 12px;
-  margin-left: 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.logout-button:hover {
-  background-color: #c82333;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0; /* Prevent header actions from shrinking */
-}
-
-.dashboard-stats-row {
-  display: flex;
-  margin-bottom: 2rem;
-}
-
-.dashboard-stat-box {
-  flex: 1;
-  background: linear-gradient(90deg, #0066b2 0%, #0073e6 100%);
-  color: #fff;
-  margin-right: 8px;
-  border-radius: 8px;
-  padding: 2rem 0;
-  text-align: center;
-  font-size: 1.2rem;
-}
-
-.dashboard-stat-box:last-child {
-  margin-right: 0;
-}
-
-.stat-label {
-  display: block;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  opacity: 0.8;
-}
-
-.stat-value {
-  display: block;
-  font-size: 2.4rem;
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-
-.time-filter-dropdown {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: white;
-  margin-right: 10px;
-  font-size: 14px;
-}
-
-/* If you want to style both dropdowns the same way */
-.filter-dropdown, .time-filter-dropdown {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: white;
-  margin-right: 10px;
-  font-size: 14px;
+  margin-top: 16px;
 }

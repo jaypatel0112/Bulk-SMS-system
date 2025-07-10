@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
-import './AssignNumber.css'; // Optional external CSS for extra styles
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import TopNavbar from '../components/TopNavbar';
+import './AssignNumber.css';
 
 const AssignNumber = () => {
   const { email } = useParams();
   const navigate = useNavigate();
-
   const [employees, setEmployees] = useState([]);
   const [twilioNumbers, setTwilioNumbers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -18,6 +19,17 @@ const AssignNumber = () => {
     fetchData();
   }, []);
 
+  // Auto-hide message after 4 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage('');
+      }, 4000); // 4 seconds
+
+      return () => clearTimeout(timer); // Cleanup timer on component unmount or message change
+    }
+  }, [message]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -25,7 +37,6 @@ const AssignNumber = () => {
         axios.get(`${process.env.REACT_APP_API_URL}/api/user/role/2/all`),
         axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`),
       ]);
-
       setEmployees(Array.isArray(empRes.data) ? empRes.data : []);
       setTwilioNumbers(Array.isArray(numberRes.data) ? numberRes.data : []);
     } catch (err) {
@@ -41,22 +52,16 @@ const AssignNumber = () => {
       setMessage('Please select user and enter phone number.');
       return;
     }
-
     try {
       setLoading(true);
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/twilionumber`,
-        {
-          phone_number: phoneNumber,
-          user_id: selectedUserId,
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/twilionumber`, {
+        phone_number: phoneNumber,
+        user_id: selectedUserId,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
+      });
       setMessage('Twilio number assigned successfully!');
       setPhoneNumber('');
       setSelectedUserId('');
@@ -79,7 +84,6 @@ const AssignNumber = () => {
           'Content-Type': 'application/json',
         },
       });
-
       setMessage('Twilio number deleted successfully!');
       fetchData();
     } catch (err) {
@@ -91,102 +95,107 @@ const AssignNumber = () => {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto bg-white rounded shadow animate-fadeIn">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Assign Twilio Number</h2>
-        <button
-          onClick={() => navigate(-1)}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
-        >
-          ← Back
-        </button>
-      </div>
+    <div className="dashboard-wrapper">
+      <Sidebar email={decodeURIComponent(email)} />
+      <div className="dashboard-main-assign">
+        <TopNavbar customTitle="Assign Twilio Number" />
+        <div className="assign-container">
+          <div className="assign-content">
+            {/* Left Column - Assign Form */}
+            <div className="assign-form-section">
+              <h2>Assign a Number</h2>
+              <div className="form-container-assign">
+                {/* Twilio Number - Inline */}
+                <div className="form-field-inline">
+                  <label>Twilio Number</label>
+                  <input
+                    type="text"
+                    placeholder="Enter Number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="form-input-assign"
+                  />
+                </div>
+                
+                {/* Employee - Inline */}
+                <div className="form-field-inline">
+                  <label>Employee</label>
+                  {loading ? (
+                    <div className="loading-select">Loading employees...</div>
+                  ) : (
+                    <select
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className="form-select-assign"
+                    >
+                      <option value="">Select Employee</option>
+                      {employees.map((emp) => (
+                        <option key={emp.user_id} value={emp.user_id}>
+                          {emp.email}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                
+                {/* Assign Button */}
+                <button
+                  onClick={handleAssign}
+                  className="assign-btn"
+                  disabled={loading}
+                >
+                  {loading ? 'Processing...' : 'Assign'}
+                </button>
+                
+                {message && (
+                  <div className={`message ${message.toLowerCase().includes('success') ? 'success' : 'error'}`}>
+                    {message}
+                  </div>
+                )}
+              </div>
+            </div>
 
-      <p className="mb-4 text-sm text-gray-600">Logged in as: <span className="font-medium">{decodeURIComponent(email)}</span></p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Twilio Number</label>
-          <input
-            type="text"
-            placeholder="Enter Twilio Number"
-            className="border p-2 w-full rounded"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
-          {loading ? (
-            <p className="border p-2 rounded bg-gray-100">Loading employees...</p>
-          ) : (
-            <select
-              className="border p-2 w-full rounded"
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-            >
-              <option value="">Select Employee</option>
-              {employees.map((emp) => (
-                <option key={emp.user_id} value={emp.user_id}>
-                  {emp.email}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-
-      <button
-        onClick={handleAssign}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
-        disabled={loading}
-      >
-        {loading ? 'Processing...' : 'Assign Number'}
-      </button>
-
-      {message && (
-        <p
-          className={`mt-4 p-2 rounded ${
-            message.toLowerCase().includes('success') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {message}
-        </p>
-      )}
-
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4">Assigned Twilio Numbers</h3>
-        {twilioNumbers.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border rounded">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-2 px-4 border-b text-left">Phone Number</th>
-                  <th className="py-2 px-4 border-b text-left">Assigned To</th>
-                  <th className="py-2 px-4 border-b text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {twilioNumbers.map((number) => (
-                  <tr key={`${number.phone_number}-${number.username}`} className="hover:bg-gray-50">
-                    <td className="py-2 px-4 border-b">{number.phone_number}</td>
-                    <td className="py-2 px-4 border-b">{number.username}</td>
-                    <td className="py-2 px-4 border-b">
-                      <button
-                        onClick={() => handleDelete(number.phone_number, number.username)}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Right Column - Assigned Numbers Table */}
+            <div className="assigned-numbers-section">
+              <h2>Assigned Numbers</h2>
+              <div className="table-container-assign">
+                <table className="assigned-table">
+                  <thead>
+                    <tr>
+                      <th>Phone Number</th>
+                      <th>Assigned To</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {twilioNumbers.length > 0 ? (
+                      twilioNumbers.map((number) => (
+                        <tr key={`${number.phone_number}-${number.username}`}>
+                          <td className="phone-number">{number.phone_number}</td>
+                          <td className="assigned-email">{number.username || '-'}</td>
+                          <td className="actions-cell">
+                            <button
+                              onClick={() => handleDelete(number.phone_number, number.username)}
+                              className="delete-btn"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="no-data">
+                          No Twilio numbers assigned yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        ) : (
-          <p className="text-gray-500">No Twilio numbers assigned yet.</p>
-        )}
+        </div>
       </div>
     </div>
   );

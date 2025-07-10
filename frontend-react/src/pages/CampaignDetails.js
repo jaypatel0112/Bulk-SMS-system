@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import Sidebar from "../components/Sidebar"; // <-- Adjusted import path
+import TopNavbar from '../components/TopNavbar';
 import "./CampaignDetails.css";
 
 const CampaignDetails = () => {
@@ -190,6 +192,7 @@ const CampaignDetails = () => {
     }, 30000);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line
   }, [id, location.pathname]);
 
   if (loading) {
@@ -223,171 +226,217 @@ const CampaignDetails = () => {
   );
 
   return (
-    <div className="campaign-container">
-      {statusNumbers.type && (
-        <div className="status-numbers-modal">
-          <div className="status-numbers-content">
-            <div className="status-numbers-header">
-              <h3>
-                {statusNumbers.type.charAt(0).toUpperCase() + statusNumbers.type.slice(1)} Numbers
-                <span className="close-btn" onClick={closeStatusNumbers}>×</span>
-              </h3>
-            </div>
+    <div className="campaign-details-layout">
+      {/* Sidebar on the left */}
+      <Sidebar />
 
-            {statusNumbers.loading ? (
-              <div className="loading-container">
-                <div className="spinner"></div>
-                <p>Loading {statusNumbers.type} numbers...</p>
+      {/* Main content on the right */}
+        <div className="campaign-container">
+          {/* Global Header - Similar to Dashboard */}
+          <TopNavbar />
+
+          {/* Campaign Details Header */}
+          <div className="campaign-details-header">
+            <div className="header-content">
+              <div className="title-section">
+                <h2>Campaign: {campaign.campaign_name}</h2>
+                {campaign.user_email && (
+                  <p className="owner-badge"> Created by: {campaign.user_email}</p>
+                )}
               </div>
-            ) : statusNumbers.error ? (
-              <div className="error-message">
-                {statusNumbers.error}
-                <button onClick={() => statusNumbers.type === 'replied' ? fetchRepliedNumbers() : fetchStatusNumbers(statusNumbers.type)}>Retry</button>
-              </div>
-            ) : (
-              <div className="numbers-list-container">
-                <p className="count-info">Total: {statusNumbers.numbers.length} numbers</p>
-                <div className="numbers-list">
-                  {statusNumbers.numbers.map((number, index) => (
-                    <div key={index} className="number-item">
-                      {number}
+              <button className="back-button" onClick={() => navigate(-1)}>
+                ← Back
+              </button>
+            </div>
+          
+
+            {/* Modal for status numbers */}
+            {statusNumbers.type && (
+              <div className="status-numbers-modal">
+                <div className="status-numbers-content">
+                  <div className="status-numbers-header">
+                    <h3>
+                      {statusNumbers.type.charAt(0).toUpperCase() + statusNumbers.type.slice(1)} Numbers
+                      <span className="close-btn" onClick={closeStatusNumbers}>×</span>
+                    </h3>
+                  </div>
+                  {statusNumbers.loading ? (
+                    <div className="loading-container">
+                      <div className="spinner"></div>
+                      <p>Loading {statusNumbers.type} numbers...</p>
                     </div>
-                  ))}
+                  ) : statusNumbers.error ? (
+                    <div className="error-message">
+                      {statusNumbers.error}
+                      <button onClick={() => statusNumbers.type === 'replied' ? fetchRepliedNumbers() : fetchStatusNumbers(statusNumbers.type)}>
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="numbers-list-container">
+                      <p className="count-info">Total: {statusNumbers.numbers.length} numbers</p>
+                      <div className="numbers-list">
+                        {statusNumbers.numbers.map((number, index) => (
+                          <div key={index} className="number-item">
+                            {number}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      <div className="campaign-header">
-        <button
-          className="back-button"
-          onClick={() => navigate(-1)}
-        >
-          ← Back
-        </button>
-        <h2>📢 Campaign: {campaign.campaign_name}</h2>
-        {campaign.user_email && (
-          <p className="owner-badge">Owner: {campaign.user_email}</p>
-        )}
-      </div>
-
-      <div className="tabs">
-        <button
-          className={activeTab === "overview" ? "active" : ""}
-          onClick={() => setActiveTab("overview")}
-        >
-          Campaign Overview
-        </button>
-        <button
-          className={activeTab === "contacts" ? "active" : ""}
-          onClick={() => setActiveTab("contacts")}
-        >
-          Contacts ({campaign.contacts.length})
-        </button>
-      </div>
-
-      {activeTab === "overview" && (
-        <div className="tab-content">
-          <div className="overview-grid">
-            <div className="campaign-info">
-              <h3>Campaign Information</h3>
-              <div className="info-box">
-                <p><strong>Campaign Name:</strong> {campaign.campaign_name}</p>
-                <p><strong>Sender Phone:</strong> {campaign.sender_phone_number}</p>
-                <p><strong>Created At:</strong> {new Date(campaign.created_at).toLocaleString()}</p>
-                <p><strong>Message:</strong> {campaign.message_template}</p>
-              </div>
-            </div>
-
-            <div className="campaign-report">
-              <h3>📊 Delivery Report</h3>
-              <div className="stats-grid">
-                <div className="stat-box">
-                  <span className="stat-label">Total Messages</span>
-                  <span className="stat-value">{calculateTotal(statusCounts)}</span>
-                </div>
-                <div className="stat-box clickable" onClick={() => fetchStatusNumbers('delivered')}>
-                  <span className="stat-label">Delivered</span>
-                  <span className="stat-value">{statusCounts.delivered}</span>
-                </div>
-                <div className="stat-box clickable" onClick={() => fetchStatusNumbers('failed')}>
-                  <span className="stat-label">Failed</span>
-                  <span className="stat-value">{statusCounts.failed}</span>
-                </div>
-                <div className="stat-box clickable" onClick={() => fetchStatusNumbers('queued')}>
-                  <span className="stat-label">Queued</span>
-                  <span className="stat-value">{statusCounts.queued}</span>
-                </div>
-                <div className="stat-box clickable" onClick={() => fetchRepliedNumbers()}>
-                  <span className="stat-label">Replies</span>
-                  <span className="stat-value">{statusCounts.replies}</span>
-                </div>
+            {/* Tabs Wrapper */}
+            <div className="tabs-wrapper">
+              {/* Tabs */}
+              <div className="tabs">
+                <button
+                  className={activeTab === "overview" ? "active" : ""}
+                  onClick={() => setActiveTab("overview")}
+                >
+                  Campaign Overview
+                </button>
+                <button
+                  className={activeTab === "contacts" ? "active" : ""}
+                  onClick={() => setActiveTab("contacts")}
+                >
+                  Contacts ({campaign.contacts.length})
+                </button>
               </div>
 
-              <button onClick={() => {
-                refreshMessageStatuses();
-                fetchStatusCounts();
-              }} className="refresh-button">
-                🔄 Refresh Status
-              </button>
+              {/* Tab Content */}
+              <div className="tab-content">
+                {activeTab === "overview" && (
+                  <div className="overview-container">
+                    <div className="overview-content">
+                      <div className="campaign-info">
+                        <h3>Campaign Information</h3>
+                        <div className="info-details">
+                          <p><strong>Campaign Name:</strong> {campaign.campaign_name}</p>
+                          <p><strong>Sender Phone:</strong> {campaign.sender_phone_number}</p>
+                          <p><strong>Created At:</strong> {new Date(campaign.created_at).toLocaleString()}</p>
+                          <p><strong>Message:</strong> {campaign.message_template}</p>
+                        </div>
+                      </div>
+
+                      <div className="campaign-report">
+                        <div className="report-header-row">
+                          <h3>Delivery Report</h3>
+                          <button
+                            onClick={() => {
+                              refreshMessageStatuses();
+                              fetchStatusCounts();
+                            }}
+                            className="refresh-button"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path
+                                d="M4 4V9H4.58152M4.58152 9C5.24618 7.35652 6.43937 5.97687 8.01849 5.08658C9.59761 4.19629 11.4637 3.85519 13.2825 4.11025C15.1014 4.36531 16.7705 5.19885 18.0284 6.48178C19.2863 7.76471 20.0617 9.43163 20.2393 11.2329M20 20V15H19.4185M19.4185 15C18.7538 16.6435 17.5606 18.0231 15.9815 18.9134C14.4024 19.8037 12.5363 20.1448 10.7175 19.8898C8.89856 19.6347 7.22951 18.8012 5.97161 17.5182C4.71371 16.2353 3.93834 14.5684 3.76071 12.7671"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            Refresh Status
+                          </button>
+                        </div>
+
+                        <div className="stats-grid-compact">
+                          <div className="stat-box-compact total-messages-bg">
+                            <div className="stat-content">
+                              <span className="stat-label">Total Messages</span>
+                              <span className="stat-value">{calculateTotal(statusCounts)}</span>
+                            </div>
+                          </div>
+
+                          <div className="stat-box-compact clickable delivered-bg" onClick={() => fetchStatusNumbers('delivered')}>
+                            <div className="stat-content">
+                              <span className="stat-label">Delivered</span>
+                              <span className="stat-value">{statusCounts.delivered}</span>
+                            </div>
+                          </div>
+
+                          <div className="stat-box-compact clickable failed-bg" onClick={() => fetchStatusNumbers('failed')}>
+                            <div className="stat-content">
+                              <span className="stat-label">Failed</span>
+                              <span className="stat-value">{statusCounts.failed}</span>
+                            </div>
+                          </div>
+
+                          <div className="stat-box-compact clickable queued-bg" onClick={() => fetchStatusNumbers('queued')}>
+                            <div className="stat-content">
+                              <span className="stat-label">Queued</span>
+                              <span className="stat-value">{statusCounts.queued}</span>
+                            </div>
+                          </div>
+
+                          <div className="stat-box-compact clickable replies-bg" onClick={() => fetchRepliedNumbers()}>
+                            <div className="stat-content">
+                              <span className="stat-label">Replies</span>
+                              <span className="stat-value">{statusCounts.replies}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "contacts" && (
+                  <div>
+                    <div className="contacts-header">
+                      <h3>Contact List</h3>
+                      <div className="contacts-count">
+                        Showing {currentContacts.length} of {campaign.contacts.length} contacts
+                      </div>
+                    </div>
+                    <div className="table-container">
+                      <table className="contacts-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Phone Number</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentContacts.map((contact, idx) => (
+                            <tr key={idx}>
+                              <td>{(currentPage - 1) * contactsPerPage + idx + 1}</td>
+                              <td>{contact.first_name || '-'}</td>
+                              <td>{contact.last_name || '-'}</td>
+                              <td>{contact.phone_number}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="pagination">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          ⬅️ Previous
+                        </button>
+                        <span>Page {currentPage} of {totalPages}</span>
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next ➡️
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      )}
-
-      {activeTab === "contacts" && (
-        <div className="tab-content">
-          <div className="contacts-header">
-            <h3>Contact List</h3>
-            <div className="contacts-count">
-              Showing {currentContacts.length} of {campaign.contacts.length} contacts
-            </div>
-          </div>
-
-          <div className="table-container">
-            <table className="contacts-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Phone Number</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentContacts.map((contact, idx) => (
-                  <tr key={idx}>
-                    <td>{(currentPage - 1) * contactsPerPage + idx + 1}</td>
-                    <td>{contact.first_name || '-'}</td>
-                    <td>{contact.last_name || '-'}</td>
-                    <td>{contact.phone_number}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                ⬅️ Previous
-              </button>
-              <span>Page {currentPage} of {totalPages}</span>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                Next ➡️
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

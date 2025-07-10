@@ -1,231 +1,262 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import Sidebar from '../components/Sidebar';
-import './Campaign.css';
+"use client"
+import axios from "axios"
+import Papa from "papaparse"
+import { useEffect, useRef, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
+import * as XLSX from "xlsx"
+import Sidebar from "../components/Sidebar"
+import TopNavbar from "../components/TopNavbar"
+import "./Campaign.css"
 
 const Campaign = () => {
-  const { email } = useParams();
-  const navigate = useNavigate();
-  const [csvFile, setCsvFile] = useState(null);
-  const [csvHeaders, setCsvHeaders] = useState([]);
-  const [message, setMessage] = useState('');
-  const [twilioNumber, setTwilioNumber] = useState('');
-  const [campaignName, setCampaignName] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contacts, setContacts] = useState([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showVars, setShowVars] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [assignedNumbers, setAssignedNumbers] = useState([]);
-  const [allNumbers, setAllNumbers] = useState([]);
-  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
-  const messageRef = useRef(null);
+  const { email } = useParams()
+  const navigate = useNavigate()
+  const [csvFile, setCsvFile] = useState(null)
+  const [csvHeaders, setCsvHeaders] = useState([])
+  const [message, setMessage] = useState("")
+  const [twilioNumber, setTwilioNumber] = useState("")
+  const [campaignName, setCampaignName] = useState("")
+  const [scheduledAt, setScheduledAt] = useState("")
+  const [scheduledTime, setScheduledTime] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [contacts, setContacts] = useState([])
+  const [showPreview, setShowPreview] = useState(false)
+  const [showVars, setShowVars] = useState(false)
+  const [feedbackMsg, setFeedbackMsg] = useState(null)
+  const [userRole, setUserRole] = useState(null)
+  const [assignedNumbers, setAssignedNumbers] = useState([])
+  const [allNumbers, setAllNumbers] = useState([])
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [showContactsLoaded, setShowContactsLoaded] = useState(false)
 
-  const MAX_CHAR_LIMIT = 160;
-  const RESERVED_STOP_LENGTH = 20;
+  const messageRef = useRef(null)
+  const MAX_CHAR_LIMIT = 160
+  const RESERVED_STOP_LENGTH = 20
 
   useEffect(() => {
     if (!email) {
-      navigate('/login');
+      navigate("/login")
     } else {
-      fetchUserData();
+      fetchUserData()
     }
-    // eslint-disable-next-line
-  }, [email, navigate]);
+  }, [email, navigate])
 
   const fetchUserData = async () => {
-    setIsLoadingUserData(true);
+    setIsLoadingUserData(true)
     try {
-      // Get user role
       const roleResponse = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`,
         { params: { email } }
-      );
-      const role = roleResponse.data.role;
+      )
+      const role = roleResponse.data.role
 
       if (role === 1 || roleResponse.data.user_id === null) {
-        setUserRole('admin');
-        // Fetch all numbers for admin, ensure uniqueness
+        setUserRole("admin")
         const allNumbersResponse = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/twilionumber`
-        );
+        )
         const uniqueNumbers = Array.from(
-          new Set((allNumbersResponse.data || []).map(n => n.phone_number))
-        );
-        setAllNumbers(uniqueNumbers);
-        if (uniqueNumbers.length > 0) setTwilioNumber(uniqueNumbers[0]);
+          new Set((allNumbersResponse.data || []).map((n) => n.phone_number))
+        )
+        setAllNumbers(uniqueNumbers)
+        if (uniqueNumbers.length > 0) setTwilioNumber(uniqueNumbers[0])
       } else {
-        setUserRole('user');
-        // Get assigned numbers for non-admin users
+        setUserRole("user")
         const numbersResponse = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
           { params: { email } }
-        );
-        let numbers = [];
+        )
+        let numbers = []
         if (Array.isArray(numbersResponse.data.numbers)) {
-          numbers = numbersResponse.data.numbers;
+          numbers = numbersResponse.data.numbers
         } else if (Array.isArray(numbersResponse.data)) {
-          numbers = numbersResponse.data;
+          numbers = numbersResponse.data
         }
-        setAssignedNumbers(numbers);
-        if (numbers.length > 0) setTwilioNumber(numbers[0]);
+        setAssignedNumbers(numbers)
+        if (numbers.length > 0) setTwilioNumber(numbers[0])
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      toast.error('Failed to load user information');
+      console.error("Error fetching user data:", error)
+      toast.error("Failed to load user information")
     } finally {
-      setIsLoadingUserData(false);
+      setIsLoadingUserData(false)
     }
-  };
+  }
 
   const processParsedData = (data) => {
     if (!data || data.length === 0) {
-      setFeedbackMsg({ type: 'error', text: 'File is empty or could not be parsed.' });
-      return;
+      setFeedbackMsg({ type: "error", text: "File is empty or could not be parsed." })
+      return
     }
-    // Normalize headers to lowercase with underscores
-    const headers = Object.keys(data[0] || {});
-    const normalizedHeaders = headers.map(h =>
-      String(h).trim().toLowerCase().replace(/\s+/g, '_')
-    );
-    const normalized = data.map(row => {
-      const obj = {};
+
+    const headers = Object.keys(data[0] || {})
+    const normalizedHeaders = headers.map((h) =>
+      String(h).trim().toLowerCase().replace(/\s+/g, "_")
+    )
+
+    const normalized = data.map((row) => {
+      const obj = {}
       headers.forEach((h, index) => {
-        const normalizedKey = normalizedHeaders[index];
-        const value = row[h];
-        obj[normalizedKey] = (value === null || value === undefined)
-          ? ''
-          : String(value).trim();
-      });
-      return obj;
-    });
-    setCsvHeaders(normalizedHeaders);
-    setContacts(normalized);
-    setFeedbackMsg({ type: 'success', text: 'File loaded successfully.' });
-  };
+        const normalizedKey = normalizedHeaders[index]
+        const value = row[h]
+        obj[normalizedKey] = value === null || value === undefined ? "" : String(value).trim()
+      })
+      return obj
+    })
+
+    setCsvHeaders(normalizedHeaders)
+    setContacts(normalized)
+    setFeedbackMsg({ type: "success", text: "File loaded successfully." })
+    setShowContactsLoaded(true)
+    setTimeout(() => setShowContactsLoaded(false), 3000)
+  }
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file || !(file.type === 'text/csv' || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
-      setFeedbackMsg({ type: 'error', text: 'Please upload a valid CSV or Excel file.' });
-      return;
+    const file = e.target.files[0]
+    if (!file || !(file.type === "text/csv" || file.name.endsWith(".xlsx") || file.name.endsWith(".xls"))) {
+      setFeedbackMsg({ type: "error", text: "Please upload a valid CSV or Excel file." })
+      return
     }
-    setCsvFile(file);
-    if (file.type === 'text/csv') {
+
+    setCsvFile(file)
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    // Simulate upload progress
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          setIsUploading(false)
+          return 100
+        }
+        return prev + 10
+      })
+    }, 200)
+
+    if (file.type === "text/csv") {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: (results) => {
-          processParsedData(results.data);
-        },
+        complete: (results) => processParsedData(results.data),
         error: (err) => {
-          setFeedbackMsg({ type: 'error', text: 'Error parsing CSV file.' });
-          console.error(err);
-        }
-      });
+          setFeedbackMsg({ type: "error", text: "Error parsing CSV file." })
+          console.error(err)
+          setIsUploading(false)
+        },
+      })
     } else {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        processParsedData(jsonData);
-      };
-      reader.readAsArrayBuffer(file);
+        const data = new Uint8Array(e.target.result)
+        const workbook = XLSX.read(data, { type: "array" })
+        const firstSheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[firstSheetName]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet)
+        processParsedData(jsonData)
+      }
+      reader.readAsArrayBuffer(file)
     }
-  };
+  }
+
+  const removeFile = (e) => {
+    if (e) e.preventDefault()
+    setCsvFile(null)
+    setContacts([])
+    setCsvHeaders([])
+    setFeedbackMsg(null)
+    setUploadProgress(0)
+    setIsUploading(false)
+  }
 
   const handleInsertVariable = (variable) => {
-    const normalizedVar = variable.trim().toLowerCase().replace(/\s+/g, '_');
-    const cursorPos = messageRef.current.selectionStart;
-    const newMessage = `${message.slice(0, cursorPos)}\${${normalizedVar}}${message.slice(cursorPos)}`;
-    setMessage(newMessage);
-    setShowVars(false);
+    const normalizedVar = variable.trim().toLowerCase().replace(/\s+/g, "_")
+    const cursorPos = messageRef.current.selectionStart
+    const newMessage = `${message.slice(0, cursorPos)}\${${normalizedVar}}${message.slice(cursorPos)}`
+    setMessage(newMessage)
+    setShowVars(false)
     setTimeout(() => {
-      messageRef.current.focus();
-      messageRef.current.selectionStart = cursorPos + normalizedVar.length + 3;
-      messageRef.current.selectionEnd = cursorPos + normalizedVar.length + 3;
-    }, 0);
-  };
+      messageRef.current.focus()
+      messageRef.current.selectionStart = cursorPos + normalizedVar.length + 3
+      messageRef.current.selectionEnd = cursorPos + normalizedVar.length + 3
+    }, 0)
+  }
 
   const convertCDTToUTC = (cdtDateTime) => {
-    if (!cdtDateTime) return null;
-    const date = new Date(cdtDateTime);
-    const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-    utcDate.setHours(utcDate.getHours() + 5);
-    return utcDate.toISOString();
-  };
+    if (!cdtDateTime) return null
+    const date = new Date(cdtDateTime)
+    const utcDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    utcDate.setHours(utcDate.getHours() + 5)
+    return utcDate.toISOString()
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const STOP_TEXT = '\nSTOP to opt out.';
-    const updatedMessage = message + STOP_TEXT;
+    e.preventDefault()
+    const STOP_TEXT = "\nSTOP to opt out."
+    const updatedMessage = message + STOP_TEXT
 
     if (!csvFile || !updatedMessage || !twilioNumber || !campaignName || contacts.length === 0) {
-      toast.error('Please fill in all fields and upload a CSV with valid contacts.');
-      return;
+      toast.error("Please fill in all fields and upload a CSV with valid contacts.")
+      return
     }
+
     if (message.length > MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH) {
-      toast.error(`Message too long! Max allowed is ${MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH} characters.`);
-      return;
+      toast.error(`Message too long! Max allowed is ${MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH} characters.`)
+      return
     }
-    setIsSubmitting(true);
+
+    setIsSubmitting(true)
     const payload = {
       campaign_name: campaignName,
       sender_id: twilioNumber,
       message_template: updatedMessage,
       contacts,
       scheduled_at: convertCDTToUTC(scheduledAt),
-      user_email: decodeURIComponent(email), // <-- This is sent to backend
-      user_role: userRole
-    };
-
-    console.log("Payload being sent to backend:", payload);
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/campaign/upload`, payload);
-      toast.success('🚀 Campaign launched successfully!');
-      setTimeout(() => {
-        navigate(`/dashboard/${email}`);
-      }, 2000);
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || 'Campaign launch failed. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      user_email: decodeURIComponent(email),
+      user_role: userRole,
     }
-  };
 
-  // Admins see a dropdown of all unique numbers; users see their assigned numbers
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/campaign/upload`, payload)
+      toast.success("🚀 Campaign launched successfully!")
+      setTimeout(() => navigate(`/dashboard/${email}`), 2000)
+    } catch (error) {
+      console.error(error)
+      toast.error(error.response?.data?.message || "Campaign launch failed. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const renderSenderNumberInput = () => {
     if (isLoadingUserData) {
-      return <div className="loading-numbers">Loading sender options...</div>;
+      return <div className="loading-numbers">Loading sender options...</div>
     }
-    if (userRole === 'admin') {
+
+    if (userRole === "admin") {
       return (
         <select
           value={twilioNumber}
-          onChange={e => setTwilioNumber(e.target.value)}
+          onChange={(e) => setTwilioNumber(e.target.value)}
           required
           className="form-control"
         >
-          <option value="" disabled>Select a Twilio number</option>
-          {allNumbers.map((num, idx) => (
+          <option value="" disabled>
+            Select a Twilio number
+          </option>
+          {allNumbers.map((num) => (
             <option key={num} value={num}>
               {num}
             </option>
           ))}
         </select>
-      );
+      )
     }
+
     if (assignedNumbers.length > 0) {
       return (
         <select
@@ -240,8 +271,9 @@ const Campaign = () => {
             </option>
           ))}
         </select>
-      );
+      )
     }
+
     return (
       <input
         type="text"
@@ -249,156 +281,283 @@ const Campaign = () => {
         disabled
         className="form-control disabled-input"
       />
-    );
-  };
+    )
+  }
+
+  const getCurrentTime = () => {
+    return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }
+
+  const handlePreviewToggle = () => {
+    console.log("Preview toggle clicked, current state:", showPreview)
+    setShowPreview(!showPreview)
+  }
 
   return (
     <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} />
-      <div className="dashboard-main">
-        <div className="dashboard-header">
-          <h2>📢 Launch SMS Campaign</h2>
-          <p className="user-email">Logged in as: {decodeURIComponent(email)}</p>
-          {userRole && (
-            <p className="user-role">Role: {userRole === 'admin' ? 'Administrator' : 'Standard User'}</p>
-          )}
-        </div>
-        <div className="dashboard-content">
-          <form onSubmit={handleSubmit} className="campaign-form">
-            {/* Left Section */}
-            <div className="form-left-section">
-              <div className="form-group">
-                <label>Campaign Name</label>
-                <input
-                  type="text"
-                  value={campaignName}
-                  onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="Enter campaign name"
-                  required
-                  className="form-control"
-                />
-              </div>
-              <div className="form-group">
-                <label>Schedule Time (optional)</label>
-                <input
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  className="form-control"
-                />
-                <small className="timezone-note">Times are in CDT (UTC-5) and will be converted to UTC</small>
-              </div>
-              <div className="form-group">
-                <label>Sender Number</label>
-                {renderSenderNumberInput()}
-              </div>
-              <div className="form-group message-section">
-                <label>Message Content</label>
-                <div className="message-input-container">
-                  <textarea
-                    ref={messageRef}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Hi ${first_name}, you're awesome! 🎉"
-                    maxLength={MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH}
+      <div className="dashboard-main-create-campaign">
+        <TopNavbar customTitle="Create Campaign" />
+        <div className={`campaign-container ${showPreview ? "preview-active" : ""}`}>
+          {/* Form Content */}
+          <div className="form-container">
+            <form onSubmit={handleSubmit} className="campaign-form-new">
+              <div className="form-field">
+                <div className="form-field-row">
+                  <label>Campaign Name</label>
+                  <input
+                    type="text"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Enter campaign name"
                     required
-                    className="form-control"
+                    className="form-input"
                   />
-                  <div className="message-controls">
-                    <div className="char-counter">
-                      {message.length}/{MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH}
-                      <span className="stop-text">STOP message will be auto-added</span>
+                </div>
+              </div>
+
+              <div className="form-field">
+                <div className="form-field-row">
+                  <label>Sender Number</label>
+                  {renderSenderNumberInput()}
+                </div>
+              </div>
+
+              <div className="form-field schedule-field">
+                <div className="form-field-row">
+                  <label>Schedule Time (optional)</label>
+                  <div className="schedule-inputs">
+                    <div className="date-input">
+                      <label className="sub-label">Select Date</label>
+                      <input
+                        type="date"
+                        value={scheduledAt}
+                        onChange={(e) => setScheduledAt(e.target.value)}
+                        className="form-input"
+                      />
                     </div>
-                    {csvHeaders.length > 0 && (
-                      <button
-                        type="button"
-                        className="vars-button"
-                        onClick={() => setShowVars(!showVars)}
-                      >
-                        {showVars ? '✕ Hide Variables' : '+ Insert Variables'}
-                      </button>
+                    <div className="time-input">
+                      <label className="sub-label">Select Time</label>
+                      <input
+                        type="time"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-field message-field">
+                <div className="form-field-row">
+                  <label>Message Content</label>
+                  <div className="message-container">
+                    <textarea
+                      ref={messageRef}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Hey ${first_name}, special deal just for you!"
+                      maxLength={MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH}
+                      required
+                      className="form-textarea"
+                    />
+                    <div className="message-footer">
+                      <div className="char-counter">
+                        {message.length}/{MAX_CHAR_LIMIT - RESERVED_STOP_LENGTH} STOP message will be auto-added
+                      </div>
+                      {csvHeaders.length > 0 && (
+                        <button
+                          type="button"
+                          className="insert-vars-btn"
+                          onClick={() => setShowVars(!showVars)}
+                        >
+                          Insert Variables
+                        </button>
+                      )}
+                    </div>
+                    {showVars && (
+                      <ul className="vars-dropdown">
+                        {csvHeaders.map((header) => (
+                          <li key={header} onClick={() => handleInsertVariable(header)}>
+                            ${header}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </div>
-                  {showVars && (
-                    <ul className="vars-dropdown">
-                      {csvHeaders.map(header => (
-                        <li key={header} onClick={() => handleInsertVariable(header)}>
-                          ${header}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               </div>
-            </div>
-            {/* Right Section */}
-            <div className="form-right-section">
-              <div className="file-upload-container">
-                <label>Contact List (CSV or Excel)</label>
-                <div className="file-upload-area">
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={handleFileChange}
-                    id="file-input"
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="file-input" className="file-upload-label">
-                    <div className="upload-content">
-                      <span className="upload-icon">📄</span>
-                      <span className="upload-text">
-                        {csvFile ? csvFile.name : 'Drop your CSV/Excel file here'}
+
+              <div className="form-field upload-field">
+                <div className="form-field-row">
+                  <label>Contact List (CSV or Excel)</label>
+                  <div className="upload-container">
+                    <div className="upload-header">
+                      <span>Uploads</span>
+                      <span className="upload-status">
+                        {csvFile ? "1 file" : "None"}
                       </span>
-                      <span className="upload-hint">or click to browse</span>
                     </div>
-                  </label>
-                </div>
-                {contacts.length > 0 && (
-                  <div className="contacts-preview">
-                    <div className="contacts-count">
-                      ✅ {contacts.length} contacts loaded
+                    <div className="upload-content-wrapper">
+                      {/* Left side - Upload area */}
+                      <div
+                        className="file-upload-area-new"
+                        onClick={() => document.getElementById("file-input").click()}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <input
+                          type="file"
+                          accept=".csv,.xlsx,.xls"
+                          onChange={handleFileChange}
+                          id="file-input"
+                          style={{ display: "none" }}
+                        />
+                        <div className="upload-content-new">
+                          <div className="upload-icon-new">📄</div>
+                          <p className="upload-text-new">Drag and drop files here</p>
+                          <p className="upload-or">OR</p>
+                          <button
+                            type="button"
+                            className="browse-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              document.getElementById("file-input").click()
+                            }}
+                          >
+                            Browse Files
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Right side - Uploaded files */}
+                      {csvFile && (
+                        <div className="uploaded-files-section">
+                          <div className="uploaded-file-item">
+                            <div className="file-info">
+                              <div className="file-name">{csvFile.name}</div>
+                              <div className="file-details">
+                                {contacts.length} contacts loaded
+                              </div>
+                            </div>
+                            <button className="remove-file-btn" onClick={removeFile}>
+                              ×
+                            </button>
+                          </div>
+                          {isUploading && (
+                            <div className="upload-progress-item">
+                              <div className="progress-info">
+                                <span className="progress-text">Uploading {csvFile.name}</span>
+                                <span className="progress-percentage">{uploadProgress}%</span>
+                              </div>
+                              <div className="progress-bar">
+                                <div
+                                  className="progress-fill"
+                                  style={{ width: `${uploadProgress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
+                    {contacts.length > 0 && !isUploading && showContactsLoaded && (
+                      <div className="contacts-loaded">
+                        ✅ {contacts.length} contacts loaded
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-              <div className="action-buttons">
+
+              <div className="form-actions">
                 <button
                   type="submit"
-                  className="button button-primary"
-                  disabled={isSubmitting || (userRole !== 'admin' && assignedNumbers.length === 0)}
+                  className="btn-primary"
+                  disabled={isSubmitting || (userRole !== "admin" && assignedNumbers.length === 0)}
                 >
-                  {isSubmitting ? '🔄 Sending...' : '🚀 Launch Campaign'}
+                  {isSubmitting ? "Launching..." : "Launch Campaign"}
                 </button>
                 <button
                   type="button"
-                  className="button button-secondary"
-                  onClick={() => setShowPreview(true)}
+                  className="btn-secondary"
+                  onClick={handlePreviewToggle}
                 >
-                  👁️ Preview Message
+                  {showPreview ? "Hide Preview" : "Preview Message"}
                 </button>
               </div>
+            </form>
+          </div>
+
+          {/* Phone-like Preview Area - Always render, control visibility with CSS */}
+          <div className={`preview-area ${showPreview ? "active" : ""}`}>
+            <div className="preview-header">
+              <div className="preview-contact-info">
+                <h4>{campaignName || "Contact Name"}</h4>
+                <p>{twilioNumber || "+1234567890"}</p>
+              </div>
+              <button
+                className="preview-close"
+                onClick={() => setShowPreview(false)}
+                aria-label="Close Preview"
+              >
+                ×
+              </button>
             </div>
-          </form>
+            <div className="preview-messages">
+              {message ? (
+                <div>
+                  <div className="preview-message-bubble">
+                    {message}
+                    <br />
+                    <em style={{ fontSize: "11px", opacity: 0.8 }}>
+                      STOP to opt out.
+                    </em>
+                  </div>
+                  <div className="preview-message-time">
+                    {getCurrentTime()}
+                  </div>
+                </div>
+              ) : (
+                <div className="preview-empty-state">
+                  Type your message to see preview...
+                </div>
+              )}
+            </div>
+            <div className="preview-input-area">
+              <input
+                type="text"
+                className="preview-input"
+                placeholder="Type your message..."
+                disabled
+              />
+              <button className="preview-send-btn" disabled>
+                Send
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      {/* Message Preview Modal */}
+
+      {/* Modal for mobile preview */}
       {showPreview && (
         <div className="preview-modal" onClick={() => setShowPreview(false)}>
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
             <h3>📱 Message Preview</h3>
             <div className="preview-message">
-              <p>{message}</p>
-              <em>STOP to opt out.</em>
+              <p>{message || "Type your message to see preview..."}</p>
+              {message && <em>STOP to opt out.</em>}
             </div>
-            <button className="button button-secondary" onClick={() => setShowPreview(false)}>
+            <button className="btn-secondary" onClick={() => setShowPreview(false)}>
               Close Preview
             </button>
           </div>
         </div>
       )}
+
       <ToastContainer />
     </div>
-  );
-};
+  )
+}
 
-export default Campaign;
+export default Campaign
