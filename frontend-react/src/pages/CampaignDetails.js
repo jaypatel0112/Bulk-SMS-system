@@ -4,8 +4,13 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar"; // <-- Adjusted import path
 import TopNavbar from '../components/TopNavbar';
 import "./CampaignDetails.css";
+import card1 from '../bgImages/Card_1.png';
+import card2 from '../bgImages/Card_2.png';
+import card3 from '../bgImages/Card_3.png';
+
 
 const CampaignDetails = () => {
+  const { email } = useParams()
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +32,14 @@ const CampaignDetails = () => {
     replies: 0
   });
   const contactsPerPage = 50;
+  const statusTypeToBg = {
+  delivered: card2,
+  failed: card3,
+  queued: card1,
+  replied: card2, // or whichever image you want for replies
+  total: card1,
+};
+
 
   const getEmailFromPath = () => {
     const pathParts = location.pathname.split('/');
@@ -196,13 +209,16 @@ const CampaignDetails = () => {
   }, [id, location.pathname]);
 
   if (loading) {
-    return (
-      <div className="loading-container">
+  return (
+    <div className="loading-container">
+      <div className="loading-center-content">
         <div className="spinner"></div>
         <p>Loading campaign details...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   if (error) {
     return (
@@ -228,7 +244,7 @@ const CampaignDetails = () => {
   return (
     <div className="campaign-details-layout">
       {/* Sidebar on the left */}
-      <Sidebar />
+      <Sidebar email={decodeURIComponent(email)} />
 
       {/* Main content on the right */}
         <div className="campaign-container">
@@ -253,12 +269,27 @@ const CampaignDetails = () => {
             {/* Modal for status numbers */}
             {statusNumbers.type && (
               <div className="status-numbers-modal">
-                <div className="status-numbers-content">
-                  <div className="status-numbers-header">
+                <div className="status-numbers-content"
+                  style={{
+                    backgroundImage: `url(${card2})`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right bottom',
+                    backgroundSize: 'cover'
+                  }}>
+                  <div className="status-numbers-header"
+                    style={{
+                      backgroundImage: `url(${card2})`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right bottom',
+                      backgroundSize: 'cover',
+                      backgroundColor: 'transparent'
+                    }}>
                     <h3>
                       {statusNumbers.type.charAt(0).toUpperCase() + statusNumbers.type.slice(1)} Numbers
-                      <span className="close-btn" onClick={closeStatusNumbers}>×</span>
                     </h3>
+                    <button className="close-btn" onClick={closeStatusNumbers} aria-label="Close">
+                      ×
+                    </button>
                   </div>
                   {statusNumbers.loading ? (
                     <div className="loading-container">
@@ -416,18 +447,14 @@ const CampaignDetails = () => {
                     </div>
                     {totalPages > 1 && (
                       <div className="pagination">
-                        <button
-                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                          disabled={currentPage === 1}
-                        >
-                          ⬅️ Previous
+                        <button className="pagination-btn">
+                          <span className="arrow arrow-left">←</span>
+                          Previous
                         </button>
                         <span>Page {currentPage} of {totalPages}</span>
-                        <button
-                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next ➡️
+                        <button className="pagination-btn">
+                          Next
+                          <span className="arrow arrow-right">→</span>
                         </button>
                       </div>
                     )}

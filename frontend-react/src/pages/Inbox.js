@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Sidebar from "../components/Sidebar"
 import "./Inbox.css"
+import cardBg from "../bgImages/Card_1.png";
 
 const API_URL = process.env.REACT_APP_API_URL
 const optOutKeywords = ["stop", "stopall", "unsubscribe", "cancel", "quit", "end"]
@@ -417,7 +418,12 @@ const Inbox = () => {
       <div className="dashboard-wrapper">
         <Sidebar email={decodeURIComponent(email)} />
         <div className="inbox-dashboard-main">
-          <div className="loading-spinner">Loading conversations...</div>
+          <div className="loading-overlay">
+            <div className="loading-center-content">
+              <div className="spinner"></div>
+              <div className="loading-text">Loading conversations...</div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -658,7 +664,13 @@ const Inbox = () => {
       {/* New Message Modal */}
       {showNewMessageModal && (
         <div className="modal-overlay">
-          <div className="modal-content new-message-modal">
+          <div className="modal-content new-message-modal"
+            style={{
+              backgroundImage: `url(${cardBg})`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right bottom",
+              backgroundSize: "cover", // or "contain"
+            }}>
             <h3>Send New Message</h3>
             <label>
               From Number:

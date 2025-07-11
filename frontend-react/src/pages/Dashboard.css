@@ -1,8 +1,5 @@
-/* Dashboard.css - Full Responsive, Proper Padding & Scrollbars */
-/* Import modern fonts */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
 
-/* Root Variables */
 :root {
   --sidebar-width: 240px;
   --header-height: 100px;
@@ -15,37 +12,100 @@
   --container-max-width: 1150px;
 }
 
-/* Dashboard Layout */
+/* --- SIDEBAR LAYOUT --- */
 .dashboard-container {
   display: flex;
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   background-color: #F9FAFB;
   font-family: "Montserrat", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  position: relative;
 }
 
-/* Main Content Area */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  max-width: var(--sidebar-width);
+  min-height: 100vh;
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+/* --- TOP NAVBAR --- */
+.top-navbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: var(--header-height);
+  z-index: 200;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .top-navbar {
+    left: 0;
+    width: 100vw;
+  }
+}
+
+/* --- MAIN CONTENT --- */
 .dashboard-main {
-  flex: 1;
-  padding: 0;
+  margin-left: var(--sidebar-width);
   margin-top: var(--header-height);
-  background-color: #F9FAFB;
-  min-height: 0;
-  overflow-y: visible;
-  height: auto;
+  flex: 1 1 0;
+  min-width: 0;
+  background: #f8f9fa;
+  min-height: calc(100vh - var(--header-height));
+  height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+@media (max-width: 900px) {
+  .sidebar {
+    position: relative;
+    width: 100vw;
+    min-width: 0;
+    max-width: 100vw;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    min-height: auto;
+    height: auto;
+    z-index: 100;
+  }
+  .dashboard-main {
+    margin-left: 0;
+    margin-top: var(--header-height);
+    width: 100vw;
+    min-height: calc(100vh - var(--header-height));
+    height: calc(100vh - var(--header-height));
+  }
+  .dashboard-container {
+    flex-direction: column;
+  }
 }
 
-/* Centered, Gapped, and Well-Padded Sections */
-.user-management-section,
-.stats-section-new,
-.campaigns-section-new {
+/* --- SECTION CONTAINERS --- */
+
+/* Message Statistics: fixed height, does not stretch */
+.stats-section-new {
   width: 100%;
   max-width: var(--container-max-width);
   margin: 5px auto;
-  padding: 32px 32px 32px 32px; /* top, right, bottom, left */
+  padding: 32px;
   background: white;
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
@@ -53,80 +113,103 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  height: 250px; /* Fixed height */
+  min-height: 180px;
+  max-height: 520px;
+  flex: 0 0 auto;
 }
 
-/* User Management Section - Scrollable List */
-.user-management-section {
-  max-height: 500px; /* Ensures the section does not grow forever */
+/* User Management and Campaigns: stretch to fill */
+.user-management-section,
+.campaigns-section-new {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 5px auto;
+  padding: 32px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid #F3F4F6;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
   overflow: hidden;
 }
 
-.users-container {
-  flex: 1 1 auto;
-  max-height: 350px; /* Ensures scrolling if there are many users */
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px 8px 16px 8px;
-  box-sizing: border-box;
-  scrollbar-gutter: stable;
-}
-
-.users-container::-webkit-scrollbar {
-  width: 8px;
-}
-.users-container::-webkit-scrollbar-thumb {
-  background: #E5E7EB;
-  border-radius: 4px;
-}
-
-/* Extra gap on very large screens */
-@media (min-width: 1400px) {
+@media (max-width: 1400px) {
   .user-management-section,
   .stats-section-new,
   .campaigns-section-new {
-    padding-left: 48px;
-    padding-right: 48px;
+    padding-left: 32px;
+    padding-right: 32px;
   }
 }
-
-/* Tighter gap on mobile */
 @media (max-width: 900px) {
-  .user-management-section,
   .stats-section-new,
+  .user-management-section,
   .campaigns-section-new {
     padding: 16px;
   }
+  .stats-section-new {
+    height: 120px;
+    min-height: 120px;
+    max-height: 160px;
+  }
+}
+@media (max-width: 600px) {
+  .stats-section-new,
+  .user-management-section,
+  .campaigns-section-new {
+    padding: 8px;
+  }
+  .stats-section-new {
+    height: 100px;
+    min-height: 100px;
+    max-height: 120px;
+  }
+}
+
+/* --- SCROLLABLE LISTS --- */
+.users-container,
+.campaigns-container-new {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 8px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #E5E7EB transparent;
+}
+.users-container::-webkit-scrollbar,
+.campaigns-container-new::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+.users-container::-webkit-scrollbar-thumb,
+.campaigns-container-new::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 4px;
+}
+@media (max-width: 900px) {
   .users-container,
   .campaigns-container-new {
     padding: 12px;
   }
-  .user-management-section {
-    max-height: 400px;
-  }
-  .users-container {
-    max-height: 250px;
-  }
 }
-
 @media (max-width: 600px) {
-  .user-management-section,
-  .stats-section-new,
-  .campaigns-section-new {
-    padding: 8px;
-  }
   .users-container,
   .campaigns-container-new {
     padding: 6px;
   }
-  .user-management-section {
-    max-height: 300px;
-  }
-  .users-container {
-    max-height: 160px;
-  }
 }
 
-/* User Profile Section */
+/* --- USER PROFILE SECTION --- */
 .user-profile-section {
   width: 100%;
   max-width: 1210px;
@@ -134,7 +217,6 @@
   padding: 0 32px;
   box-sizing: border-box;
 }
-
 .user-profile-card {
   background: white;
   border-radius: 16px;
@@ -146,13 +228,11 @@
   align-items: center;
   max-width: 100%;
 }
-
 .user-profile-left {
   display: flex;
   align-items: center;
   gap: 16px;
 }
-
 .user-avatar-large {
   width: 56px;
   height: 56px;
@@ -166,20 +246,17 @@
   flex-shrink: 0;
   background: #6A84FC47;
 }
-
 .user-profile-details h3 {
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 4px 0;
 }
-
 .user-profile-details p {
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;
 }
-
 .back-to-users-btn {
   background: var(--primary-blue);
   color: white;
@@ -194,31 +271,27 @@
   align-items: center;
   gap: 8px;
 }
-
 .back-to-users-btn:hover {
   background: #2563EB;
   transform: translateY(-1px);
 }
-
 .back-icon {
   font-size: 16px;
 }
 
-/* Stats Section */
+/* --- STATS SECTION --- */
 .stats-header-new {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
-
 .stats-header-new h2 {
   margin: 0;
   color: var(--text-primary);
   font-size: 20px;
   font-weight: 600;
 }
-
 .time-filter-dropdown-new {
   padding: 8px 16px;
   border: 1px solid var(--border-color);
@@ -228,13 +301,11 @@
   color: var(--text-primary);
   cursor: pointer;
 }
-
 .stats-grid-new {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
-
 .stat-card-new {
   background: #F8FAFF;
   border-radius: 12px;
@@ -245,25 +316,21 @@
   align-items: flex-start;
   min-width: 0;
 }
-
 .stat-content-new {
   flex: 1;
 }
-
 .stat-label-new {
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
 }
-
 .stat-value-new {
   font-size: 36px;
   font-weight: 700;
   color: var(--primary-blue);
   line-height: 1;
 }
-
 .stat-icon-new {
   width: 40px;
   height: 40px;
@@ -274,45 +341,21 @@
   color: var(--primary-blue);
 }
 
-/* Campaigns Section */
+/* --- CAMPAIGNS SECTION --- */
 .campaigns-header-new {
   margin-bottom: 24px;
 }
-
 .campaigns-header-new h2 {
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }
-
-/* Campaigns List Container - Padding & Scrollbar */
-.campaigns-container-new {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color);
-  max-height: 240px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  scrollbar-gutter: stable;
-}
-
-.campaigns-container-new::-webkit-scrollbar {
-  width: 8px;
-}
-.campaigns-container-new::-webkit-scrollbar-thumb {
-  background: #E5E7EB;
-  border-radius: 4px;
-}
-
 .campaigns-grid-new {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
-
 .campaign-card-new {
   background: #F9FAFB;
   border: 1px solid var(--border-color);
@@ -326,20 +369,17 @@
   min-height: 120px;
   min-width: 0;
 }
-
 .campaign-card-new:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-blue);
 }
-
 .campaign-header-new {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
 }
-
 .campaign-header-new h3 {
   font-size: 16px;
   font-weight: 600;
@@ -350,18 +390,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .campaign-arrow {
   color: var(--text-secondary);
   margin-left: 8px;
 }
-
 .campaign-footer-new {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .campaign-status-new {
   padding: 4px 12px;
   border-radius: 20px;
@@ -370,54 +407,46 @@
   text-transform: capitalize;
   width: fit-content;
 }
-
 .campaign-status-new.sent {
   background-color: #D1FAE5;
   color: #065F46;
 }
-
 .campaign-status-new.inprogress,
 .campaign-status-new.in-progress {
   background-color: #FEF3C7;
   color: #92400E;
 }
-
 .campaign-status-new.draft {
   background-color: #E0F2FE;
   color: #1E40AF;
 }
-
 .campaign-status-new.failed {
   background-color: #FEE2E2;
   color: #991B1B;
 }
-
 .campaign-status-new.unknown {
   background-color: #FEF3C7;
   color: #92400E;
 }
-
 .campaign-date-new {
   font-size: 12px;
   color: var(--text-secondary);
   margin: 0;
 }
 
-/* User Management List - Grid */
+/* --- USER MANAGEMENT GRID --- */
 .user-management-section h2 {
   color: var(--text-primary);
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 16px 0;
 }
-
 .users-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   padding-bottom: 12px;
 }
-
 .user-card {
   height: 160px;
   background: #F9FAFB;
@@ -431,33 +460,28 @@
   justify-content: space-between;
   min-width: 0;
 }
-
 .user-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-blue);
 }
-
 .user-card.admin {
   border-left: 4px solid;
   border-left-color: #2D5DFD;
   background: rgba(106, 132, 252, 0.12);
   border-color: #BFDBFE;
 }
-
 .user-card.admin:hover {
   background: rgba(106, 132, 252, 0.12);
 }
-
 .user-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
 }
-
 .user-avatar {
-  width: 32px; /* or your preferred size */
+  width: 32px;
   height: 32px;
   border-radius: 50%;
   display: flex;
@@ -466,10 +490,8 @@
   font-weight: 600;
   font-size: 14px;
   color: white;
-  background: #6A84FC47; /* 28% opacity */
+  background: #6A84FC47;
 }
-
-
 .user-info h3 {
   font-size: 14px;
   font-weight: 600;
@@ -479,14 +501,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .user-role {
   font-size: 12px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
-/* Buttons */
+/* --- BUTTONS --- */
 .user-button {
   width: 124px;
   height: 41px;
@@ -503,30 +524,26 @@
   border: 1.45px solid transparent;
   margin-top: auto;
 }
-
 .delete-button {
   background: transparent;
   color: var(--text-secondary);
   border-color: #D1D5DB;
 }
-
 .delete-button:hover {
   background: #F3F4F6;
   border-color: #9CA3AF;
 }
-
 .logout-button {
   background: var(--primary-blue);
   color: white;
 }
-
 .logout-button:hover {
   background: #2563EB;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
-/* Empty States */
+/* --- EMPTY STATES --- */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -536,14 +553,12 @@
   border: 2px dashed #CBD5E0;
   color: var(--text-secondary);
 }
-
 .empty-state h3 {
   color: #374151;
   margin-bottom: 1rem;
   font-size: 1.25rem;
   font-weight: 600;
 }
-
 .create-button {
   background: var(--primary-blue);
   color: white;
@@ -555,34 +570,31 @@
   transition: all 0.2s ease;
   font-size: 0.875rem;
 }
-
 .create-button:hover {
   background: #2563EB;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
+/* --- STAT CARD BACKGROUNDS --- */
 .stat-bg-1 {
   background-image: url('../bgImages/Card_1.png');
   background-repeat: no-repeat;
-  background-size: cover; /* or contain, or e.g. 80% auto */
+  background-size: cover;
   background-position: right bottom;
 }
-
 .stat-bg-2 {
   background-image: url('../bgImages/Card_2.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: right bottom;
 }
-
 .stat-bg-3 {
   background-image: url('../bgImages/Card_3.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: right bottom;
 }
-
 .stat-icon-img {
   width: 35.52px;
   height: 35.52px;
@@ -590,7 +602,7 @@
   display: block;
 }
 
-/* Responsive Adjustments */
+/* --- RESPONSIVE GRIDS --- */
 @media (max-width: 1200px) {
   .stats-grid-new,
   .users-grid,
@@ -598,67 +610,32 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
 @media (max-width: 900px) {
   .stats-grid-new,
   .users-grid,
   .campaigns-grid-new {
     grid-template-columns: 1fr;
   }
-  .user-management-section,
-  .stats-section-new,
-  .campaigns-section-new {
-    padding: 16px;
-  }
-  .users-container,
-  .campaigns-container-new {
-    padding: 12px;
-  }
-  .user-management-section {
-    max-height: 400px;
-  }
-  .users-container {
-    max-height: 250px;
-  }
 }
 
-@media (max-width: 600px) {
-  .user-profile-section,
-  .user-management-section,
-  .stats-section-new,
-  .campaigns-section-new {
-    padding-left: 8px;
-    padding-right: 8px;
-    margin-left: 0;
-    margin-right: 0;
-  }
-  .user-profile-card,
-  .stats-section-new,
-  .campaigns-container-new {
-    padding: 12px;
-  }
-  .users-container,
-  .campaigns-container-new {
-    padding: 6px;
-  }
-  .user-management-section {
-    max-height: 300px;
-  }
-  .users-container {
-    max-height: 160px;
-  }
-}
-
-/* Loading and Error States */
-.dashboard-loading {
+/* --- LOADING AND ERROR STATES --- */
+.dashboard-loading-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background: #F9FAFB;
 }
-
+.dashboard-loading {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+}
 .spinner {
   width: 40px;
   height: 40px;
@@ -667,12 +644,10 @@
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
 .dashboard-error {
   display: flex;
   flex-direction: column;
@@ -682,7 +657,6 @@
   background: #F9FAFB;
   color: var(--text-primary);
 }
-
 .retry-button {
   background: var(--primary-blue);
   color: white;

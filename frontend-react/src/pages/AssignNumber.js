@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import TopNavbar from '../components/TopNavbar';
@@ -14,6 +14,28 @@ const AssignNumber = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const mainContentRef = useRef(null);
+
+  // Detect sidebar and adjust layout
+  useEffect(() => {
+    const handleResize = () => {
+      // This will force a re-render when window size changes
+      if (mainContentRef.current) {
+        mainContentRef.current.style.width = '100%';
+      }
+    };
+
+    // Initial call
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -25,7 +47,6 @@ const AssignNumber = () => {
       const timer = setTimeout(() => {
         setMessage('');
       }, 4000); // 4 seconds
-
       return () => clearTimeout(timer); // Cleanup timer on component unmount or message change
     }
   }, [message]);
@@ -97,7 +118,7 @@ const AssignNumber = () => {
   return (
     <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} />
-      <div className="dashboard-main-assign">
+      <div className="dashboard-main-assign" ref={mainContentRef}>
         <TopNavbar customTitle="Assign Twilio Number" />
         <div className="assign-container">
           <div className="assign-content">
@@ -121,7 +142,7 @@ const AssignNumber = () => {
                 <div className="form-field-inline">
                   <label>Employee</label>
                   {loading ? (
-                    <div className="loading-select">Loading employees...</div>
+                    <div className="form-loading-indicator">Loading employees...</div>
                   ) : (
                     <select
                       value={selectedUserId}
@@ -154,7 +175,6 @@ const AssignNumber = () => {
                 )}
               </div>
             </div>
-
             {/* Right Column - Assigned Numbers Table */}
             <div className="assigned-numbers-section">
               <h2>Assigned Numbers</h2>
@@ -197,6 +217,27 @@ const AssignNumber = () => {
           </div>
         </div>
       </div>
+      {window.innerWidth <= 1024 && (
+        <div className="tabbar-bottom">
+          <button className="tabbar-item">
+            <span className="tabbar-icon">🏠</span>
+            <span>Home</span>
+          </button>
+          <button className="tabbar-item active">
+            <span className="tabbar-icon">📱</span>
+            <span>Numbers</span>
+          </button>
+          <button className="tabbar-item">
+            <span className="tabbar-icon">👥</span>
+            <span>Users</span>
+          </button>
+          <button className="tabbar-item">
+            <span className="tabbar-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+        </div>
+      )}
+      {loading && <div className="loading-overlay">Processing...</div>}
     </div>
   );
 };

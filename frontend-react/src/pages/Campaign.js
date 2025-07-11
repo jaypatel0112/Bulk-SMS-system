@@ -1,4 +1,4 @@
-"use client"
+// Campaign.js
 import axios from "axios"
 import Papa from "papaparse"
 import { useEffect, useRef, useState } from "react"
@@ -43,6 +43,7 @@ const Campaign = () => {
     } else {
       fetchUserData()
     }
+    // eslint-disable-next-line
   }, [email, navigate])
 
   const fetchUserData = async () => {
@@ -186,12 +187,13 @@ const Campaign = () => {
     }, 0)
   }
 
-  const convertCDTToUTC = (cdtDateTime) => {
-    if (!cdtDateTime) return null
-    const date = new Date(cdtDateTime)
-    const utcDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    utcDate.setHours(utcDate.getHours() + 5)
-    return utcDate.toISOString()
+  // Combine date and time into a single ISO string (UTC)
+  const convertCDTToUTC = (cdtDate) => {
+    if (!cdtDate || !scheduledTime) return null
+    // Combine date and time into a single ISO string
+    const combined = `${cdtDate}T${scheduledTime}:00`
+    const date = new Date(combined)
+    return date.toISOString()
   }
 
   const handleSubmit = async (e) => {
@@ -289,18 +291,19 @@ const Campaign = () => {
   }
 
   const handlePreviewToggle = () => {
-    console.log("Preview toggle clicked, current state:", showPreview)
     setShowPreview(!showPreview)
   }
 
   return (
     <div className="dashboard-wrapper">
-      <Sidebar email={decodeURIComponent(email)} />
+      <div className="sidebar">
+        <Sidebar email={decodeURIComponent(email)} />
+      </div>
       <div className="dashboard-main-create-campaign">
         <TopNavbar customTitle="Create Campaign" />
-        <div className={`campaign-container ${showPreview ? "preview-active" : ""}`}>
-          {/* Form Content */}
-          <div className="form-container">
+
+        <div className={`campaign-main-content${showPreview ? " with-preview" : ""}`}>
+          <div className={`form-container${showPreview ? " shrink" : ""}`}>
             <form onSubmit={handleSubmit} className="campaign-form-new">
               <div className="form-field">
                 <div className="form-field-row">
@@ -489,73 +492,58 @@ const Campaign = () => {
             </form>
           </div>
 
-          {/* Phone-like Preview Area - Always render, control visibility with CSS */}
-          <div className={`preview-area ${showPreview ? "active" : ""}`}>
-            <div className="preview-header">
-              <div className="preview-contact-info">
-                <h4>{campaignName || "Contact Name"}</h4>
-                <p>{twilioNumber || "+1234567890"}</p>
+          {/* Preview Area (side-by-side, only visible if showPreview) */}
+          {showPreview && (
+            <div className="preview-area active">
+              <div className="preview-header">
+                <div className="preview-contact-info">
+                  <h4>{campaignName || "Contact Name"}</h4>
+                  <p>{twilioNumber || "+1234567890"}</p>
+                </div>
+                <button
+                  className="preview-close"
+                  onClick={() => setShowPreview(false)}
+                  aria-label="Close Preview"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                className="preview-close"
-                onClick={() => setShowPreview(false)}
-                aria-label="Close Preview"
-              >
-                ×
-              </button>
-            </div>
-            <div className="preview-messages">
-              {message ? (
-                <div>
-                  <div className="preview-message-bubble">
-                    {message}
-                    <br />
-                    <em style={{ fontSize: "11px", opacity: 0.8 }}>
-                      STOP to opt out.
-                    </em>
+              <div className="preview-messages">
+                {message ? (
+                  <div>
+                    <div className="preview-message-bubble">
+                      {message}
+                      <br />
+                      <em style={{ fontSize: "11px", opacity: 0.8 }}>
+                        STOP to opt out.
+                      </em>
+                    </div>
+                    <div className="preview-message-time">
+                      {getCurrentTime()}
+                    </div>
                   </div>
-                  <div className="preview-message-time">
-                    {getCurrentTime()}
+                ) : (
+                  <div className="preview-empty-state">
+                    Type your message to see preview...
                   </div>
-                </div>
-              ) : (
-                <div className="preview-empty-state">
-                  Type your message to see preview...
-                </div>
-              )}
+                )}
+              </div>
+              <div className="preview-input-area">
+                <input
+                  type="text"
+                  className="preview-input"
+                  placeholder="Type your message..."
+                  disabled
+                />
+                <button className="preview-send-btn" disabled>
+                  Send
+                </button>
+              </div>
             </div>
-            <div className="preview-input-area">
-              <input
-                type="text"
-                className="preview-input"
-                placeholder="Type your message..."
-                disabled
-              />
-              <button className="preview-send-btn" disabled>
-                Send
-              </button>
-            </div>
-          </div>
+          )}
         </div>
+        <ToastContainer />
       </div>
-
-      {/* Modal for mobile preview */}
-      {showPreview && (
-        <div className="preview-modal" onClick={() => setShowPreview(false)}>
-          <div className="preview-content" onClick={(e) => e.stopPropagation()}>
-            <h3>📱 Message Preview</h3>
-            <div className="preview-message">
-              <p>{message || "Type your message to see preview..."}</p>
-              {message && <em>STOP to opt out.</em>}
-            </div>
-            <button className="btn-secondary" onClick={() => setShowPreview(false)}>
-              Close Preview
-            </button>
-          </div>
-        </div>
-      )}
-
-      <ToastContainer />
     </div>
   )
 }
