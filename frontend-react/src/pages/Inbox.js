@@ -1,416 +1,332 @@
-"use client"
-import axios from "axios"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import Sidebar from "../components/Sidebar"
-import "./Inbox.css"
-import cardBg from "../bgImages/Card_1.png";
+import axios from 'axios';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import TopNavbar from '../components/TopNavbar';
+import './Inbox.css';
 
-const API_URL = process.env.REACT_APP_API_URL
-const optOutKeywords = ["stop", "stopall", "unsubscribe", "cancel", "quit", "end"]
+const API_URL = process.env.REACT_APP_API_URL;
+const optOutKeywords = ["stop", "stopall", "unsubscribe", "cancel", "quit", "end"];
 
 function isOptOutMessage(message) {
-  if (!message?.body) return false
-  const body = message.body.toLowerCase().trim()
-  return optOutKeywords.includes(body)
+  if (!message?.body) return false;
+  const body = message.body.toLowerCase().trim();
+  return optOutKeywords.includes(body);
 }
 
 function isBulkStopMessage(message) {
-  if (!message?.body) return false
-  return message.body.trim().toLowerCase().endsWith("stop to opt out.")
-}
-
-const fetchLatestCampaignForNumber = async (twilio_number, contact_phone) => {
-  try {
-    const response = await axios.get(`${API_URL}/api/campaign/latestcampaign`, {
-      params: { twilio_number, contact_phone },
-    })
-    if (Array.isArray(response.data)) {
-      return response.data.length > 0 ? response.data[0].campaign_name : null
-    }
-    return response.data?.campaign_name || null
-  } catch (error) {
-    console.error("Error fetching latest campaign:", error)
-    return null
-  }
+  if (!message?.body) return false;
+  return message.body.trim().toLowerCase().endsWith("stop to opt out.");
 }
 
 const Inbox = () => {
-  const { email } = useParams()
-  const navigate = useNavigate()
-  
+  const { email } = useParams();
+  const navigate = useNavigate();
+
   // State declarations
-  const [conversations, setConversations] = useState([])
-  const [selectedConversation, setSelectedConversation] = useState(null)
-  const [replyText, setReplyText] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  const [newMessageAlert, setNewMessageAlert] = useState(false)
-  const [sortOption, setSortOption] = useState(localStorage.getItem("inboxSortOption") || "newest")
-  const [search, setSearch] = useState("")
-  const [filter, setFilter] = useState("all")
-  
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [newMessageAlert, setNewMessageAlert] = useState(false);
+  const [sortOption, setSortOption] = useState(localStorage.getItem("inboxSortOption") || "newest");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [cursor, setCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
   // Refs
-  const bottomRef = useRef(null)
-  const conversationsRef = useRef([])
-  const selectedConversationRef = useRef(null)
+  const bottomRef = useRef(null);
+  const conversationListRef = useRef(null);
+  const conversationsRef = useRef([]);
+  const selectedConversationRef = useRef(null);
 
   // New Message Modal State
-  const [showNewMessageModal, setShowNewMessageModal] = useState(false)
-  const [newMsgTo, setNewMsgTo] = useState("")
-  const [newMsgBody, setNewMsgBody] = useState("")
-  const [newMsgLoading, setNewMsgLoading] = useState(false)
-  const [newMsgError, setNewMsgError] = useState(null)
-
-  // Sender number dropdown state
-  const [twilioNumber, setTwilioNumber] = useState("")
-  const [userRole, setUserRole] = useState(null)
-  const [assignedNumbers, setAssignedNumbers] = useState([])
-  const [allNumbers, setAllNumbers] = useState([])
-  const [isLoadingUserData, setIsLoadingUserData] = useState(true)
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [newMsgTo, setNewMsgTo] = useState("");
+  const [newMsgBody, setNewMsgBody] = useState("");
+  const [newMsgLoading, setNewMsgLoading] = useState(false);
+  const [newMsgError, setNewMsgError] = useState(null);
+  const [twilioNumber, setTwilioNumber] = useState("");
+  const [userRole, setUserRole] = useState(null);
+  const [assignedNumbers, setAssignedNumbers] = useState([]);
+  const [allNumbers, setAllNumbers] = useState([]);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
   // Update refs when state changes
   useEffect(() => {
-    conversationsRef.current = conversations
-    selectedConversationRef.current = selectedConversation
-  }, [conversations, selectedConversation])
+    conversationsRef.current = conversations;
+    selectedConversationRef.current = selectedConversation;
+  }, [conversations, selectedConversation]);
 
   // Utility functions
   const formatContactName = (conv) => {
-    if (conv.contact_display) return conv.contact_display
+    if (conv.contact_display) return conv.contact_display;
     if (conv.contact_first_name || conv.contact_last_name)
-      return `${conv.contact_first_name || ""} ${conv.contact_last_name || ""}`.trim()
-    return conv.contact_phone || ""
-  }
+      return `${conv.contact_first_name || ""} ${conv.contact_last_name || ""}`.trim();
+    return conv.contact_phone || "";
+  };
 
   const formatMessageDate = (timestamp) => {
-    if (!timestamp) return ""
-    const messageDate = new Date(timestamp)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    
+    if (!timestamp) return "";
+    const messageDate = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
     if (messageDate.toDateString() === today.toDateString()) {
-      return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     } else if (messageDate.toDateString() === yesterday.toDateString()) {
-      return "Yesterday"
+      return "Yesterday";
     } else {
-      return messageDate.toLocaleDateString()
+      return messageDate.toLocaleDateString();
     }
-  }
+  };
 
   // API functions
-  const markConversationAsRead = useCallback(async (twilio_number, contact_phone) => {
-    try {
-      const response = await axios.post(`${API_URL}/api/message/mark-conversation-read`, {
-        twilio_number,
-        contact_phone,
-        email: decodeURIComponent(email),
-      })
-      
-      if (response.data.success) {
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.twilio_number === twilio_number && conv.contact_phone === contact_phone
-              ? { ...conv, has_unread: false }
-              : conv,
-          ),
-        )
-        setSelectedConversation((prev) =>
-          prev && prev.twilio_number === twilio_number && prev.contact_phone === contact_phone
-            ? { ...prev, has_unread: false }
-            : prev,
-        )
-      }
-    } catch (error) {
-      console.error("Error marking conversation as read:", error)
-      setError("Failed to mark conversation as read. Please try again.")
-    }
-  }, [email])
-
-  const fetchConversations = useCallback(async (silent = false) => {
-    try {
-      const decodedEmail = decodeURIComponent(email)
-      const response = await axios.get(`${API_URL}/api/inbox/${decodedEmail}`)
-      const newConversations = response.data
-        .map((conv) => ({
-          ...conv,
-          messages: conv.messages || [],
-          has_unread: conv.has_unread,
-          display_name: formatContactName(conv),
-        }))
-        .filter((conv) => conv.messages.some((msg) => !isOptOutMessage(msg) && !isBulkStopMessage(msg)))
-        .sort((a, b) => {
-          if (sortOption === "unread") {
-            if (a.has_unread && !b.has_unread) return -1
-            if (!a.has_unread && b.has_unread) return 1
-          }
-          const aLast = a.messages[a.messages.length - 1]?.timestamp || a.created_at
-          const bLast = b.messages[b.messages.length - 1]?.timestamp || b.created_at
-          return new Date(bLast) - new Date(aLast)
-        })
-
-      if (!silent) {
-        const prevConversations = conversationsRef.current
-        const hasNewMessages = newConversations.some((newConv) => {
-          const prevConv = prevConversations.find(
-            (c) => c.twilio_number === newConv.twilio_number && c.contact_phone === newConv.contact_phone,
-          )
-          return (
-            (!prevConv && newConv.messages.length > 0) ||
-            (prevConv && newConv.messages.length > prevConv.messages.length)
-          )
-        })
-        
-        if (hasNewMessages) {
-          setNewMessageAlert(true)
-          setTimeout(() => setNewMessageAlert(false), 3000)
+  const markConversationAsRead = useCallback(
+    async (twilio_number, contact_phone) => {
+      try {
+        const response = await axios.post(`${API_URL}/api/message/mark-conversation-read`, {
+          twilio_number,
+          contact_phone,
+          email: decodeURIComponent(email),
+        });
+        if (response.data.success) {
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.twilio_number === twilio_number && conv.contact_phone === contact_phone
+                ? { ...conv, has_unread: false }
+                : conv,
+            ),
+          );
+          setSelectedConversation((prev) =>
+            prev && prev.twilio_number === twilio_number && prev.contact_phone === contact_phone
+              ? { ...prev, has_unread: false }
+              : prev,
+          );
         }
+      } catch (error) {
+        console.error("Error marking conversation as read:", error);
+        setError("Failed to mark conversation as read. Please try again.");
       }
+    },
+    [email],
+  );
 
-      setConversations(newConversations)
-      setError(null)
-      
-      const prevSelected = selectedConversationRef.current
-      if (prevSelected) {
-        const updatedConv = newConversations.find(
-          (c) => c.twilio_number === prevSelected.twilio_number && c.contact_phone === prevSelected.contact_phone,
-        )
-        if (updatedConv) {
-          setSelectedConversation(updatedConv)
-        } else {
-          setSelectedConversation(null)
+  const fetchConversations = useCallback(async (loadMore = false, cursorArg = null) => {
+    try {
+      if (loadMore) {
+        if (!hasMore || isFetchingMore) return;
+        setIsFetchingMore(true);
+      } else {
+        setLoading(true);
+      }
+  
+      const decodedEmail = decodeURIComponent(email);
+      const url = `${API_URL}/api/inbox/${decodedEmail}${cursorArg ? `?cursor=${encodeURIComponent(cursorArg)}` : ''}`;
+  
+      const response = await axios.get(url);
+      const data = response.data;
+  
+      const receivedConversations = Array.isArray(data?.conversations) 
+        ? data.conversations 
+        : Array.isArray(data) ? data : [];
+  
+      if (loadMore) {
+        // Combine old + new
+        const combined = [...conversationsRef.current, ...receivedConversations];
+
+        // Remove duplicates by unique key
+        const uniqueMap = new Map();
+        combined.forEach(conv => {
+          const key = `${conv.id}-${conv.twilio_number}-${conv.contact_phone}`;
+          uniqueMap.set(key, conv);
+        });
+
+        // Convert map to array and sort by last_message_at descending
+        let uniqueList = Array.from(uniqueMap.values()).sort((a, b) =>
+          new Date(b.last_message_at) - new Date(a.last_message_at)
+        );
+
+        // Trim the oldest if exceeding limit (e.g., max 100)
+        const MAX_CONVERSATIONS = 100;
+        if (uniqueList.length > MAX_CONVERSATIONS) {
+          uniqueList = uniqueList.slice(0, MAX_CONVERSATIONS);
         }
+
+        setConversations(uniqueList);
+
+      } else {
+        setConversations(receivedConversations);
       }
+  
+      setCursor(data?.next_cursor || null);
+      setHasMore(data?.has_more || false);
+      setError(null);
     } catch (err) {
-      console.error("Failed to fetch conversations:", err)
-      setError("Failed to load conversations. Please try again.")
+      console.error("Failed to fetch conversations:", err);
+      setError("Failed to load conversations. Please try again.");
+      setConversations([]);
     } finally {
-      setLoading(false)
-    }
-  }, [email, sortOption])
-
-  const sendReply = async () => {
-    if (!replyText.trim() || !selectedConversation) return
-    
-    try {
-      const decodedEmail = decodeURIComponent(email)
-      await axios.post(`${API_URL}/api/message/reply`, {
-        to: selectedConversation.contact_phone,
-        from: selectedConversation.twilio_number,
-        body: replyText,
-        direction: "outbound",
-        email: decodedEmail,
-      })
-
-      const newMessage = {
-        id: Date.now().toString(),
-        body: replyText,
-        direction: "outbound",
-        timestamp: new Date().toISOString(),
+      if (loadMore) {
+        setIsFetchingMore(false);
+      } else {
+        setLoading(false);
       }
-
-      setSelectedConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, newMessage],
-      }))
-
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.twilio_number === selectedConversation.twilio_number &&
-          conv.contact_phone === selectedConversation.contact_phone
-            ? {
-                ...conv,
-                messages: [...conv.messages, newMessage],
-                last_message: replyText,
-                last_message_at: new Date().toISOString(),
-              }
-            : conv,
-        ),
-      )
-
-      setReplyText("")
-      setSuccess("Message sent successfully!")
-      setTimeout(() => setSuccess(null), 3000)
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100)
-      setTimeout(() => fetchConversations(true), 1000)
-    } catch (err) {
-      console.error("Failed to send reply:", err)
-      setError("Failed to send message. Please try again.")
     }
-  }
+  }, [email, hasMore, isFetchingMore, API_URL]);
+  
+  
 
-  const handleSendNewMessage = async () => {
-    setNewMsgError(null)
-    if (!newMsgTo.trim() || !newMsgBody.trim() || !twilioNumber) {
-      setNewMsgError("All fields are required.")
-      return
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!conversationListRef.current || !hasMore || isFetchingMore) return;
+      const { scrollTop, scrollHeight, clientHeight } = conversationListRef.current;
+      if (scrollHeight - (scrollTop + clientHeight) < 100) {
+        fetchConversations(true, cursor);
+      }
+    };
+  
+    const listElement = conversationListRef.current;
+    if (listElement) {
+      listElement.addEventListener('scroll', handleScroll);
+      return () => listElement.removeEventListener('scroll', handleScroll);
     }
+  }, [fetchConversations, hasMore, isFetchingMore, cursor]);
 
-    setNewMsgLoading(true)
-    try {
-      const decodedEmail = decodeURIComponent(email)
-      await axios.post(`${API_URL}/api/message/single`, {
-        fromNumber: twilioNumber,
-        toNumber: newMsgTo,
-        message: newMsgBody,
-        email: decodedEmail,
-      })
-
-      setShowNewMessageModal(false)
-      setNewMsgTo("")
-      setNewMsgBody("")
-      setSuccess("Message sent successfully!")
-      setTimeout(() => setSuccess(null), 3000)
-      fetchConversations(true)
-    } catch (err) {
-      setNewMsgError(err.response?.data?.error || "Failed to send message. Please try again.")
-    } finally {
-      setNewMsgLoading(false)
-    }
-  }
-
-  // Event handlers
-  const handleSortChange = (e) => {
-    const value = e.target.value
-    setSortOption(value)
-    localStorage.setItem("inboxSortOption", value)
-  }
-
-  const handleConversationSelect = useCallback(async (conversation) => {
-    setSelectedConversation(conversation)
-    markConversationAsRead(conversation.twilio_number, conversation.contact_phone)
-    const campaign = await fetchLatestCampaignForNumber(conversation.twilio_number, conversation.contact_phone)
-    setSelectedConversation((prev) => ({
-      ...prev,
-      latest_campaign_name: campaign,
-    }))
-  }, [markConversationAsRead])
-
-  // Effects
+  // Initial fetch
   useEffect(() => {
     if (!email) {
-      navigate("/login")
-      return
+      navigate("/login");
+      return;
     }
-    fetchConversations()
-    const interval = setInterval(() => fetchConversations(true), 10000)
-    return () => clearInterval(interval)
-  }, [email, fetchConversations, navigate])
+    fetchConversations();
+    const interval = setInterval(() => fetchConversations(true), 10000);
+    return () => clearInterval(interval);
+  }, [email, navigate]);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (selectedConversation?.messages?.length) {
       setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-      }, 100)
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
-  }, [selectedConversation])
+  }, [selectedConversation]);
 
+  // Fetch user data for new message modal
   useEffect(() => {
-    if (!showNewMessageModal) return
-    
+    if (!showNewMessageModal) return;
+
     const fetchUserAndNumbers = async () => {
-      setIsLoadingUserData(true)
+      setIsLoadingUserData(true);
       try {
         const roleResponse = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(email)}`,
           { params: { email } },
-        )
-        const role = roleResponse.data.role
-        
+        );
+        const role = roleResponse.data.role;
+
         if (role === 1 || roleResponse.data.user_id === null) {
-          setUserRole("admin")
-          const allNumbersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`)
-          const uniqueNumbers = Array.from(new Set((allNumbersResponse.data || []).map((n) => n.phone_number)))
-          setAllNumbers(uniqueNumbers)
-          if (uniqueNumbers.length > 0) setTwilioNumber(uniqueNumbers[0])
+          setUserRole("admin");
+          const allNumbersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/twilionumber`);
+          const uniqueNumbers = Array.from(new Set((allNumbersResponse.data || []).map((n) => n.phone_number)));
+          setAllNumbers(uniqueNumbers);
+          if (uniqueNumbers.length > 0) setTwilioNumber(uniqueNumbers[0]);
         } else {
-          setUserRole("user")
+          setUserRole("user");
           const numbersResponse = await axios.get(
             `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
             { params: { email } },
-          )
-          let numbers = []
+          );
+          let numbers = [];
           if (Array.isArray(numbersResponse.data.numbers)) {
-            numbers = numbersResponse.data.numbers
+            numbers = numbersResponse.data.numbers;
           } else if (Array.isArray(numbersResponse.data)) {
-            numbers = numbersResponse.data
+            numbers = numbersResponse.data;
           }
-          setAssignedNumbers(numbers)
-          if (numbers.length > 0) setTwilioNumber(numbers[0])
+          setAssignedNumbers(numbers);
+          if (numbers.length > 0) setTwilioNumber(numbers[0]);
         }
       } catch (error) {
-        setAllNumbers([])
-        setAssignedNumbers([])
-        setTwilioNumber("")
+        setAllNumbers([]);
+        setAssignedNumbers([]);
+        setTwilioNumber("");
       } finally {
-        setIsLoadingUserData(false)
+        setIsLoadingUserData(false);
       }
-    }
-    fetchUserAndNumbers()
-  }, [showNewMessageModal, email])
+    };
 
-  // Render functions
-  const renderSenderNumberInput = () => {
-    if (isLoadingUserData) {
-      return <div className="loading-numbers">Loading sender options...</div>
-    }
+    fetchUserAndNumbers();
+  }, [showNewMessageModal, email]);
 
-    if (userRole === "admin") {
-      return (
-        <select
-          value={twilioNumber}
-          onChange={(e) => setTwilioNumber(e.target.value)}
-          required
-          className="form-control"
-        >
-          <option value="" disabled>
-            Select a Twilio number
-          </option>
-          {allNumbers.map((num, idx) => (
-            <option key={num} value={num}>
-              {num}
-            </option>
-          ))}
-        </select>
-      )
-    }
-
-    if (assignedNumbers.length > 0) {
-      return (
-        <select
-          value={twilioNumber}
-          onChange={(e) => setTwilioNumber(e.target.value)}
-          required
-          className="form-control"
-        >
-          {assignedNumbers.map((number, index) => (
-            <option key={index} value={number}>
-              {number}
-            </option>
-          ))}
-        </select>
-      )
-    }
-
-    return (
-      <input 
-        type="text" 
-        value="No numbers assigned - contact admin" 
-        disabled 
-        className="form-control disabled-input" 
-      />
-    )
-  }
+  useEffect(() => {
+    if (!selectedConversation?.twilio_number || !selectedConversation?.contact_phone) return;
+  
+    axios.get(`${API_URL}/api/campaign/latestcampaign`, {
+      params: {
+        twilio_number: selectedConversation.twilio_number,
+        contact_phone: selectedConversation.contact_phone,
+      },
+    })
+    .then(res => {
+      const campaignName = res.data.campaign_name;
+      console.log("Campaign API response:", res.data);
+  
+      if (campaignName) {
+        setSelectedConversation(prev => ({
+          ...prev,
+          latest_campaign_name: campaignName,
+        }));
+      } else {
+        setSelectedConversation(prev => ({
+          ...prev,
+          latest_campaign_name: null,
+        }));
+      }
+    })
+    .catch(err => {
+      console.error("Failed to fetch campaign name:", err);
+    });
+  }, [selectedConversation?.twilio_number, selectedConversation?.contact_phone]);
+  
+  
+  
+  
 
   // Filtered conversations
   const filteredConversations = conversations
-    .filter((conv) => {
-      if (filter === "unread") return conv.has_unread
-      return true
-    })
-    .filter((conv) => conv.display_name?.toLowerCase().includes(search.toLowerCase()))
+  .filter((conv) => {
+    if (filter === "unread") return conv.has_unread;
+    return true;
+  })
+  .filter((conv) => (conv.contact_display || "").toLowerCase().includes(search.toLowerCase()));
+
+  const handleConversationSelect = (conv) => {
+    const latest = conversations.find(
+      c =>
+        c.id === conv.id &&
+        c.twilio_number === conv.twilio_number &&
+        c.contact_phone === conv.contact_phone
+    );
+  
+    const conversationToSelect = latest || conv;
+    
+    console.log("Selected conversation full data:", conversationToSelect);
+  
+    if (conversationToSelect.has_unread) {
+      markConversationAsRead(conversationToSelect.twilio_number, conversationToSelect.contact_phone);
+    }
+  
+    setSelectedConversation(conversationToSelect);
+  };
+  
+
 
   // Loading state
   if (loading) {
@@ -418,6 +334,23 @@ const Inbox = () => {
       <div className="dashboard-wrapper">
         <Sidebar email={decodeURIComponent(email)} />
         <div className="inbox-dashboard-main">
+          <TopNavbar
+            customTitle="Inbox"
+            rightContent={
+              <>
+                {error && <div className="error-banner">{error}</div>}
+                {success && <div className="success-banner">{success}</div>}
+                {newMessageAlert && (
+                  <div className="new-message-alert" onClick={() => setNewMessageAlert(false)}>
+                    New messages received!
+                  </div>
+                )}
+                <button className="new-message-btn" onClick={() => setShowNewMessageModal(true)} title="Send a new message">
+                  New Message
+                </button>
+              </>
+            }
+          />
           <div className="loading-overlay">
             <div className="loading-center-content">
               <div className="spinner"></div>
@@ -426,44 +359,28 @@ const Inbox = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  // Main render
   return (
     <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} />
       <div className="inbox-dashboard-main">
-        <div className="dashboard-content-wrapper">
-          <div className="dashboard-header">
-            <div className="dashboard-header-content">
-              <h2>Inbox</h2>
-              <div className="header-email">{decodeURIComponent(email)}</div>
-            </div>
-            <div className="header-messages">
-            {error && <div className="error-banner">{error}</div>}
-            {success && <div className="success-banner">{success}</div>}
-            {newMessageAlert && (
-              <div className="new-message-alert" onClick={() => setNewMessageAlert(false)}>
-                New messages received!
-              </div>
-            )}
-          </div>
-            <button 
-              className="new-message-btn"
-              onClick={() => setShowNewMessageModal(true)} 
-              title="Send a new message"
-            >
+        <TopNavbar
+          customTitle="Inbox"
+          rightContent={
+            <button className="new-message-btn" onClick={() => setShowNewMessageModal(true)} title="Send a new message">
               New Message
             </button>
-            
-          </div>
+          }
+        />
 
+        <div className="dashboard-content-wrapper">
           <div className="inbox-container">
             {/* Sidebar */}
             <div className="inbox-sidebar">
               <div className="sidebar-header">
-                <h3>Conversations ({conversations.length})</h3>
+                <h3>Conversations</h3>
                 <div className="filter-controls">
                   <input
                     className="conversation-search"
@@ -471,10 +388,7 @@ const Inbox = () => {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
-                  <button 
-                    className={`pill-btn${filter === "all" ? " active" : ""}`} 
-                    onClick={() => setFilter("all")}
-                  >
+                  <button className={`pill-btn${filter === "all" ? " active" : ""}`} onClick={() => setFilter("all")}>
                     All
                   </button>
                   <button
@@ -483,11 +397,10 @@ const Inbox = () => {
                   >
                     Unread
                   </button>
-                  <select 
-                    className="conversation-dropdown" 
-                    onChange={handleSortChange} 
-                    value={sortOption}
-                  >
+                  <select className="conversation-dropdown" onChange={(e) => {
+                    setSortOption(e.target.value);
+                    localStorage.setItem("inboxSortOption", e.target.value);
+                  }} value={sortOption}>
                     <option value="newest">Newest</option>
                     <option value="unread">Unread</option>
                   </select>
@@ -497,47 +410,66 @@ const Inbox = () => {
               {filteredConversations.length === 0 ? (
                 <p className="no-conversations">No conversations found</p>
               ) : (
-                <div className="conversation-list">
-                  {filteredConversations.map((conv, idx) => {
-                    const lastRelevantMessage = [...conv.messages]
-                      .reverse()
-                      .find((msg) => !isOptOutMessage(msg) && !isBulkStopMessage(msg))
-                    
-                    return (
-                      <div
-                        key={conv.twilio_number + conv.contact_phone + idx}
-                        className={
-                          "conversation-item" +
-                          (conv.has_unread ? " unread" : "") +
-                          (selectedConversation?.twilio_number === conv.twilio_number &&
-                          selectedConversation?.contact_phone === conv.contact_phone
-                            ? " active"
-                            : "")
-                        }
-                        onClick={() => handleConversationSelect(conv)}
-                      >
-                        <div className="conversation-item-row">
-                          <span className="conversation-name">{conv.display_name}</span>
-                          <div className="conversation-time-container">
-                            <div className="conversation-time">
-                              {lastRelevantMessage
-                                ? formatMessageDate(lastRelevantMessage.timestamp)
-                                : formatMessageDate(conv.created_at)}
+                <div className="conversation-list" ref={conversationListRef}>
+                  {filteredConversations.length > 0 ? (
+                    filteredConversations.map((conv, idx) => {
+                      // Ensure conversation exists
+                      if (!conv) return null;
+                      const uniqueKey = `${conv.id ?? idx}-${conv.twilio_number}-${conv.contact_phone}-${conv.last_message_at || idx}`;
+                      const lastRelevantMessage = [...(conv.messages || [])]
+                        .reverse()
+                        .find((msg) => !isOptOutMessage(msg) && !isBulkStopMessage(msg));
+
+                      return (
+                        <div
+                          key={uniqueKey}
+                          className={`conversation-item ${conv.has_unread ? 'unread' : ''} ${
+                            selectedConversation?.id === conv.id ? 'active' : ''
+                          }`}
+                          onClick={() => handleConversationSelect(conv)}
+                        >
+                          <div className="conversation-item-row">
+                            <span className="conversation-name">
+                              {formatContactName(conv)}
+                            </span>
+                            <div className="conversation-time-container">
+                              <div className="conversation-time">
+                                {lastRelevantMessage
+                                  ? formatMessageDate(lastRelevantMessage.timestamp)
+                                  : formatMessageDate(conv.last_message_at)}
+                              </div>
+                              {conv.has_unread && <div className="unread-dot"></div>}
                             </div>
-                            {conv.has_unread && <div className="unread-dot"></div>}
+                          </div>
+                          <div className="conversation-preview-row">
+                            <span className="conversation-preview">
+                              {lastRelevantMessage?.body?.substring(0, 50) || 'New conversation'}
+                              {lastRelevantMessage?.body?.length > 50 ? '...' : ''}
+                            </span>
                           </div>
                         </div>
-                        <div className="conversation-preview-row">
-                          <span className="conversation-preview">
-                            {lastRelevantMessage
-                              ? lastRelevantMessage.body.substring(0, 50) +
-                                (lastRelevantMessage.body.length > 50 ? "..." : "")
-                              : "New conversation"}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
+                      );
+                    })
+                  ) : (
+                    <p className="no-conversations">
+                      {conversations.length === 0 
+                        ? 'No conversations found' 
+                        : 'No conversations match your filters'}
+                    </p>
+                  )}
+                  
+                  {isFetchingMore && (
+                    <div className="loading-more">
+                      <div className="spinner"></div>
+                      Loading more conversations...
+                    </div>
+                  )}
+                  
+                  {!hasMore && conversations.length > 0 && (
+                    <div className="no-more-conversations">
+                      No more conversations to load
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -549,21 +481,14 @@ const Inbox = () => {
                   <div className="chat-header">
                     <div>
                       <h3>
-                        {selectedConversation.display_name}
-                        {selectedConversation.latest_campaign_name && (
-                          <span className="campaign-name">
-                            <span className="separator">|</span>
-                            <span className="campaign-text">
-                              Last Campaign: {selectedConversation.latest_campaign_name}
-                            </span>
-                          </span>
-                        )}
+                        {formatContactName(selectedConversation)}
+                          {selectedConversation.latest_campaign_name && (
+                            <span className="campaign-tag"> — {selectedConversation.latest_campaign_name}</span>
+                          )}
                       </h3>
                       <div className="conversation-meta">
                         <span>{selectedConversation.contact_phone}</span>
-                        {selectedConversation.twilio_number && (
-                          <span> from {selectedConversation.twilio_number}</span>
-                        )}
+                        {selectedConversation.twilio_number && <span> from {selectedConversation.twilio_number}</span>}
                       </div>
                     </div>
                   </div>
@@ -573,55 +498,43 @@ const Inbox = () => {
                       .filter((msg) => !isOptOutMessage(msg) && !isBulkStopMessage(msg))
                       .reduce((acc, msg, index, array) => {
                         let showSeparator = false;
-                        
                         if (index === 0) {
-                          // Always show separator for first message
                           showSeparator = true;
                         } else {
                           const currentDate = new Date(msg.timestamp);
                           const prevDate = new Date(array[index - 1].timestamp);
-                          
-                          // Get the hour and date for comparison
                           const currentHour = currentDate.getHours();
                           const currentDay = currentDate.toDateString();
                           const prevHour = prevDate.getHours();
                           const prevDay = prevDate.toDateString();
-                          
-                          // Show separator only if:
-                          // 1. Different day, OR
-                          // 2. Same day but different hour
+
                           if (currentDay !== prevDay || currentHour !== prevHour) {
                             showSeparator = true;
                           }
                         }
-                        
+
                         if (showSeparator) {
                           const messageDate = new Date(msg.timestamp);
                           const today = new Date();
                           const yesterday = new Date(today);
                           yesterday.setDate(yesterday.getDate() - 1);
-                          
+
                           let timeLabel;
                           if (messageDate.toDateString() === today.toDateString()) {
-                            // Today - show time with hour
-                            timeLabel = messageDate.toLocaleTimeString([], { 
-                              hour: "2-digit", 
-                              minute: "2-digit" 
-                            });
+                            timeLabel = messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                           } else if (messageDate.toDateString() === yesterday.toDateString()) {
                             timeLabel = "Yesterday";
                           } else {
-                            // Other days - show date
                             timeLabel = messageDate.toLocaleDateString();
                           }
-                          
+
                           acc.push(
                             <div key={`date-${msg.timestamp}`} className="message-date-separator">
                               <span>{timeLabel}</span>
-                            </div>
+                            </div>,
                           );
                         }
-                        
+
                         acc.push(
                           <div
                             key={msg.id || msg.timestamp}
@@ -636,13 +549,13 @@ const Inbox = () => {
                                 })}
                               </span>
                             </div>
-                          </div>
+                          </div>,
                         );
-                        
+
                         return acc;
                       }, [])}
                     <div ref={bottomRef} />
-                    </div>
+                  </div>
 
                   <div className="chat-input">
                     <textarea
@@ -650,7 +563,54 @@ const Inbox = () => {
                       onChange={(e) => setReplyText(e.target.value)}
                       placeholder="Type your message..."
                     />
-                    <button onClick={sendReply}>Send</button>
+                    <button onClick={() => {
+                      if (!replyText.trim() || !selectedConversation) return;
+
+                      axios.post(`${API_URL}/api/message/reply`, {
+                        to: selectedConversation.contact_phone,
+                        from: selectedConversation.twilio_number,
+                        body: replyText,
+                        direction: "outbound",
+                        email: decodeURIComponent(email),
+                      })
+                      .then(() => {
+                        const newMessage = {
+                          id: Date.now().toString(),
+                          body: replyText,
+                          direction: "outbound",
+                          timestamp: new Date().toISOString(),
+                        };
+
+                        setSelectedConversation(prev => ({
+                          ...prev,
+                          messages: [...prev.messages, newMessage],
+                        }));
+
+                        setConversations(prev =>
+                          prev.map(conv =>
+                            conv.twilio_number === selectedConversation.twilio_number &&
+                            conv.contact_phone === selectedConversation.contact_phone
+                              ? {
+                                  ...conv,
+                                  messages: [...conv.messages, newMessage],
+                                  last_message: replyText,
+                                  last_message_at: new Date().toISOString(),
+                                }
+                              : conv,
+                          ),
+                        );
+
+                        setReplyText("");
+                        setSuccess("Message sent successfully!");
+                        setTimeout(() => setSuccess(null), 3000);
+                        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+                        setTimeout(() => fetchConversations(true), 1000);
+                      })
+                      .catch(err => {
+                        console.error("Failed to send reply:", err);
+                        setError("Failed to send message. Please try again.");
+                      });
+                    }}>Send</button>
                   </div>
                 </>
               ) : (
@@ -664,17 +624,44 @@ const Inbox = () => {
       {/* New Message Modal */}
       {showNewMessageModal && (
         <div className="modal-overlay">
-          <div className="modal-content new-message-modal"
-            style={{
-              backgroundImage: `url(${cardBg})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right bottom",
-              backgroundSize: "cover", // or "contain"
-            }}>
+          <div className="modal-content new-message-modal">
             <h3>Send New Message</h3>
             <label>
               From Number:
-              {renderSenderNumberInput()}
+              {isLoadingUserData ? (
+                <div className="loading-numbers">Loading sender options...</div>
+              ) : userRole === "admin" ? (
+                <select
+                  value={twilioNumber}
+                  onChange={(e) => setTwilioNumber(e.target.value)}
+                  required
+                  className="form-control"
+                >
+                  <option value="" disabled>
+                    Select a Twilio number
+                  </option>
+                  {allNumbers.map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
+              ) : assignedNumbers.length > 0 ? (
+                <select
+                  value={twilioNumber}
+                  onChange={(e) => setTwilioNumber(e.target.value)}
+                  required
+                  className="form-control"
+                >
+                  {assignedNumbers.map((number, index) => (
+                    <option key={index} value={number}>
+                      {number}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input type="text" value="No numbers assigned - contact admin" disabled className="form-control disabled-input" />
+              )}
             </label>
             <label>
               To Number:
@@ -697,18 +684,38 @@ const Inbox = () => {
             </label>
             {newMsgError && <div className="error-banner">{newMsgError}</div>}
             <div className="modal-actions">
-              <button 
-                onClick={handleSendNewMessage} 
-                disabled={newMsgLoading} 
-                className="send-btn"
-              >
+              <button onClick={() => {
+                setNewMsgError(null);
+                if (!newMsgTo.trim() || !newMsgBody.trim() || !twilioNumber) {
+                  setNewMsgError("All fields are required.");
+                  return;
+                }
+
+                setNewMsgLoading(true);
+                axios.post(`${API_URL}/api/message/single`, {
+                  fromNumber: twilioNumber,
+                  toNumber: newMsgTo,
+                  message: newMsgBody,
+                  email: decodeURIComponent(email),
+                })
+                .then(() => {
+                  setShowNewMessageModal(false);
+                  setNewMsgTo("");
+                  setNewMsgBody("");
+                  setSuccess("Message sent successfully!");
+                  setTimeout(() => setSuccess(null), 3000);
+                  fetchConversations(true);
+                })
+                .catch(err => {
+                  setNewMsgError(err.response?.data?.error || "Failed to send message. Please try again.");
+                })
+                .finally(() => {
+                  setNewMsgLoading(false);
+                });
+              }} disabled={newMsgLoading} className="send-btn">
                 {newMsgLoading ? "Sending..." : "Send"}
               </button>
-              <button 
-                onClick={() => setShowNewMessageModal(false)} 
-                disabled={newMsgLoading} 
-                className="cancel-btn"
-              >
+              <button onClick={() => setShowNewMessageModal(false)} disabled={newMsgLoading} className="cancel-btn">
                 Cancel
               </button>
             </div>
@@ -716,7 +723,7 @@ const Inbox = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Inbox
+export default Inbox;

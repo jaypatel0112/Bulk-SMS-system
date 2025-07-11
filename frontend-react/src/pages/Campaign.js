@@ -68,7 +68,7 @@ const Campaign = () => {
       } else {
         setUserRole("user")
         const numbersResponse = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
+          `${process.env.REACT_APP_API_URL}/api/twilionumber/user-numbers/${encodeURIComponent(email)}`,
           { params: { email } }
         )
         let numbers = []
@@ -296,9 +296,8 @@ const Campaign = () => {
 
   return (
     <div className="dashboard-wrapper">
-      <div className="sidebar">
-        <Sidebar email={decodeURIComponent(email)} />
-      </div>
+      <Sidebar email={decodeURIComponent(email)} />
+      
       <div className="dashboard-main-create-campaign">
         <TopNavbar customTitle="Create Campaign" />
 

@@ -32,18 +32,7 @@ html, body, * {
   --transition-speed: 0.2s;
 }
 
-/* === SIDEBAR FIXED === */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100dvh;
-  width: var(--sidebar-width);
-  background-color: #ffffff;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-  z-index: 1000;
-  overflow-y: auto;
-}
+
 
 /* === MAIN LAYOUT === */
 .dashboard-wrapper {
@@ -53,15 +42,26 @@ html, body, * {
   overflow: hidden;
 }
 
+.top-navbar {
+  height: 80px;
+  width: 100%;
+  background: white;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
 /* Main content respects sidebar */
 .dashboard-main-assign {
-  margin-left: var(--sidebar-width);
-  width: calc(100% - var(--sidebar-width));
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  overflow: hidden;
-  padding-top: var(--header-height);
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  padding-top: 80px; /* Match navbar height */
+  box-sizing: border-box;
 }
 
 /* Container inside main */

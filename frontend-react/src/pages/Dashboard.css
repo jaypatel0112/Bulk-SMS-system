@@ -59,7 +59,6 @@
 
 /* --- MAIN CONTENT --- */
 .dashboard-main {
-  margin-left: var(--sidebar-width);
   margin-top: var(--header-height);
   flex: 1 1 0;
   min-width: 0;
@@ -73,6 +72,7 @@
   width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  min-height: 0;
 }
 @media (max-width: 900px) {
   .sidebar {
@@ -104,7 +104,7 @@
 .stats-section-new {
   width: 100%;
   max-width: var(--container-max-width);
-  margin: 5px auto;
+  margin: 25px auto;
   padding: 32px;
   background: white;
   border-radius: 16px;
@@ -113,10 +113,11 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: 250px; /* Fixed height */
-  min-height: 180px;
+  height: 29vh;
+  min-height: 80px;
   max-height: 520px;
   flex: 0 0 auto;
+
 }
 
 /* User Management and Campaigns: stretch to fill */
@@ -227,6 +228,7 @@
   justify-content: space-between;
   align-items: center;
   max-width: 100%;
+  margin-top: 25px;
 }
 .user-profile-left {
   display: flex;
@@ -305,6 +307,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+  max-height: 100%; /* Prevent grid from exceeding parent */
+  overflow-y: auto; 
 }
 .stat-card-new {
   background: #F8FAFF;

@@ -1,12 +1,12 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Sidebar from "../components/Sidebar"; // <-- Adjusted import path
-import TopNavbar from '../components/TopNavbar';
-import "./CampaignDetails.css";
 import card1 from '../bgImages/Card_1.png';
 import card2 from '../bgImages/Card_2.png';
 import card3 from '../bgImages/Card_3.png';
+import Sidebar from "../components/Sidebar"; // <-- Adjusted import path
+import TopNavbar from '../components/TopNavbar';
+import "./CampaignDetails.css";
 
 
 const CampaignDetails = () => {
@@ -447,17 +447,26 @@ const CampaignDetails = () => {
                     </div>
                     {totalPages > 1 && (
                       <div className="pagination">
-                        <button className="pagination-btn">
+                        <button
+                          className="pagination-btn"
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
                           <span className="arrow arrow-left">←</span>
                           Previous
                         </button>
                         <span>Page {currentPage} of {totalPages}</span>
-                        <button className="pagination-btn">
+                        <button
+                          className="pagination-btn"
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
                           Next
                           <span className="arrow arrow-right">→</span>
                         </button>
                       </div>
                     )}
+
                   </div>
                 )}
               </div>

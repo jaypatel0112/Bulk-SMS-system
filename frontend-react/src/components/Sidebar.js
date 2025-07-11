@@ -1,70 +1,130 @@
+import { Box } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import './Sidebar.css';
+import { useLocation, useNavigate } from 'react-router-dom';
+import useHomeStyles from '../styles/HomeStyles';
 
 const Sidebar = ({ email }) => {
+  const classes = useHomeStyles();
   const location = useLocation();
+  const navigate = useNavigate();
   const [role, setRole] = useState(null);
+  const [selectedBox, setSelectedBox] = useState('Dashboard');
 
+  // Extract email from prop or URL
   const getEmail = () => {
     if (email) return email;
     const pathParts = location.pathname.split('/');
-    const dashboardIndex = pathParts.indexOf('dashboard');
-    if (dashboardIndex !== -1 && pathParts.length > dashboardIndex + 1) {
-      return decodeURIComponent(pathParts[dashboardIndex + 1]);
+    // Look for 'dashboard', 'campaign', 'inbox', or 'assign-number'
+    const keywords = ['dashboard', 'campaign', 'inbox', 'assign-number'];
+    for (let key of keywords) {
+      const idx = pathParts.indexOf(key);
+      if (idx !== -1 && pathParts.length > idx + 1) {
+        return decodeURIComponent(pathParts[idx + 1]);
+      }
     }
     return '';
   };
 
   const currentEmail = getEmail();
 
+  // Fetch user role
   useEffect(() => {
     const fetchRole = async () => {
       try {
         const res = await fetch(
           `${process.env.REACT_APP_API_URL}/api/user/role/${encodeURIComponent(currentEmail)}`,
-          {
-            params: { email }
-          }
         );
         const data = await res.json();
         if (data.role !== undefined) {
           setRole(data.role);
-          console.log('Fetched role:', data.role);  // <-- add this line
+          // console.log('Fetched role:', data.role);
         }
       } catch (err) {
         console.error('Failed to fetch role:', err);
       }
     };
-
-    if (currentEmail) {
-      fetchRole();
-    }
+    if (currentEmail) fetchRole();
   }, [currentEmail]);
 
+  // Highlight selected menu based on path
+  useEffect(() => {
+    if (location.pathname.includes('campaign')) {
+      setSelectedBox('Create Campaign');
+    } else if (location.pathname.includes('inbox')) {
+      setSelectedBox('Inbox');
+    } else if (location.pathname.includes('assign-number')) {
+      setSelectedBox('Assign Number');
+    } else {
+      setSelectedBox('Dashboard');
+    }
+  }, [location.pathname]);
+
+  // Navigation handler
+  const handleBoxClick = (path) => {
+    navigate(path);
+  };
+
+  // Menu items
+  const menuItems = [
+    { 
+      name: 'Dashboard', 
+      path: `/dashboard/${encodeURIComponent(currentEmail)}`,
+      icon: '🏠'
+    },
+    { 
+      name: 'Create Campaign', 
+      path: `/campaign/${encodeURIComponent(currentEmail)}`,
+      icon: '📨'
+    },
+    { 
+      name: 'Inbox', 
+      path: `/inbox/${encodeURIComponent(currentEmail)}`,
+      icon: '💬'
+    }
+  ];
+
+  if (role === 1) {
+    menuItems.push({
+      name: 'Assign Number',
+      path: `/assign-number/${encodeURIComponent(currentEmail)}`,
+      icon: '📱'
+    });
+  }
+
   return (
-    <div className="sidebar">
-      <div className="sidebar-header">
-        <h2>📊 Menu</h2>
-        {currentEmail && <p className="user-email">{currentEmail}</p>}
-      </div>
-      <ul className="sidebar-nav">
-        <li>
-          <Link to={`/dashboard/${encodeURIComponent(currentEmail)}`}>🏠 Dashboard</Link>
-        </li>
-        <li>
-          <Link to={`/campaign/${encodeURIComponent(currentEmail)}`}>📨 Create Campaign</Link>
-        </li>
-        <li>
-          <Link to={`/inbox/${encodeURIComponent(currentEmail)}`}>💬 Inbox</Link>
-        </li>
-        {role === 1 && (
-          <li>
-            <Link to={`/assign-number/${encodeURIComponent(currentEmail)}`}>📱 Assign Number</Link>
-          </li>
+    <Box className={classes.leftDiv}>
+      <Box className={classes.logoBox}>
+        <img
+          className={classes.ptpLogo}
+          src={require('../bgImages/PndGlogo.png')}
+          alt="PTP Logo"
+        />
+      </Box>
+      <Box className={classes.leftPanelBelowLogo}>
+        <Box className={classes.leftPanelOptions}>
+          {menuItems.map((item, index) => (
+            <Box
+              key={item.name}
+              className={`${classes.LeftPanelBox} ${selectedBox === item.name ? classes.selectedBox : ''} ${index === 0 ? classes.firstMenuItem : ''}`}
+              onClick={() => handleBoxClick(item.path)}
+              sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <Box className={classes.LeftPanelImgContainer}>
+                <span style={{ fontSize: '1.25vw' }}>{item.icon}</span>
+              </Box>
+              <p className={classes.LeftPanelText}>
+                {item.name}
+              </p>
+            </Box>
+          ))}
+        </Box>
+        {currentEmail && (
+          <Box sx={{ mt: 2, textAlign: 'center', color: '#888', fontSize: '0.95em' }}>
+            <span>👤 {currentEmail}</span>
+          </Box>
         )}
-      </ul>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

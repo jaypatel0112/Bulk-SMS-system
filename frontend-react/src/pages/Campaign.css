@@ -15,24 +15,8 @@ body,
   width: 100vw;
 }
 
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
-  min-height: 100vh;
-  height: 100vh;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  z-index: 100;
-  overflow-y: auto;
-}
-
 /* Main Content starts after sidebar */
 .dashboard-main-create-campaign {
-  margin-left: 240px;
   padding-top: 80px;
   min-height: 100vh;
   overflow-x: auto;
@@ -40,14 +24,18 @@ body,
   transition: margin-left 0.3s;
 }
 
-<<<<<<< HEAD
+.dashboard-main-create-campaign,
+.campaign-main-content {
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 /* FLEX LAYOUT FOR FORM + PREVIEW */
 .campaign-main-content {
   display: flex;
-=======
-.campaign-container {
-  display: flex; /* Changed from grid to flex */
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
   gap: 30px;
   width: 100%;
   max-width: 100vw;
@@ -55,7 +43,6 @@ body,
   position: relative;
   padding: 20px;
   transition: all 0.3s ease;
-<<<<<<< HEAD
   overflow-x: auto;
   min-width: 0;
   box-sizing: border-box;
@@ -63,7 +50,7 @@ body,
 
 /* FORM CONTAINER */
 .form-container {
-  flex: 1 1 0;
+  flex: 1 1;
   min-width: 0;
   max-width: 100%;
   transition: flex-basis 0.3s, max-width 0.3s;
@@ -94,7 +81,8 @@ body,
   min-width: 0;
   overflow-y: auto;
 }
-.preview-area.active {
+.preview-area.active {   /* sidebar width */
+  margin-top: 80px;
   opacity: 1;
   transform: translateX(0);
 }
@@ -114,27 +102,6 @@ body,
 .uploaded-files-section::-webkit-scrollbar-thumb {
   background: rgba(23,47,130,0.18);
   border-radius: 8px;
-=======
-  align-items: flex-start; /* Align items to top */
-}
-
-/* When preview is active, adjust the layout */
-.campaign-container.preview-active {
-  max-width: 1600px;
-}
-
-.form-container {
-  flex: 1; /* Take remaining space */
-  width: 100%;
-  transition: all 0.3s ease;
-  min-width: 0; /* Allow shrinking */
-}
-
-/* Reduce form width when preview is active */
-.campaign-container.preview-active .form-container {
-  max-width: none; /* Remove max-width constraint */
-  flex: 1; /* Take available space */
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 }
 
 /* --- MOBILE STYLES --- */
@@ -166,16 +133,19 @@ body,
     box-sizing: border-box;
   }
   .form-container {
+    width: 100vw;
     max-width: 100vw;
     min-width: 0;
     flex-basis: 100vw;
-    transition: flex-basis 0.3s, max-width 0.3s;
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
     background: transparent;
     position: relative;
     z-index: 1;
+  }
+  .preview-area:not(.active) {
+    display: none !important;
   }
   .preview-area {
     position: fixed;
@@ -218,6 +188,7 @@ body,
 /* --- REST OF YOUR STYLES BELOW --- */
 .campaign-form-new {
   background: none;
+  align-content: center;
   padding: 0;
   border-radius: 0;
   box-shadow: none;
@@ -225,14 +196,7 @@ body,
   flex-direction: column;
 }
 
-<<<<<<< HEAD
 .form-field { margin-bottom: 18px; }
-=======
-.form-field {
-  margin-bottom: 18px;
-}
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .form-field-row {
   display: grid;
   grid-template-columns: 180px 1fr;
@@ -335,15 +299,7 @@ body,
   background: #f3f4f6;
   color: #3b82f6;
 }
-<<<<<<< HEAD
 .upload-field { grid-column: 1 / -1; }
-=======
-
-.upload-field {
-  grid-column: 1 / -1;
-}
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .upload-container {
   border-radius: 8px;
   padding: 15px;
@@ -366,10 +322,6 @@ body,
   color: #6b7280;
   font-weight: 400;
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .upload-content-wrapper {
   display: flex;
   gap: 20px;
@@ -377,10 +329,6 @@ body,
   flex: 1;
   min-height: 0;
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .file-upload-area-new {
   flex: 1;
   border: 2px dashed #d1d5db;
@@ -430,15 +378,7 @@ body,
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-<<<<<<< HEAD
 .browse-btn:hover { background: #2563eb; }
-=======
-
-.browse-btn:hover {
-  background: #2563eb;
-}
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .uploaded-files-section {
   flex: 1;
   min-width: 250px;
@@ -579,33 +519,6 @@ body,
 }
 
 /* Phone-like Preview Area */
-<<<<<<< HEAD
-=======
-.preview-area {
-  background: #f8f9fa;
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  width: 400px; /* Fixed width */
-  flex-shrink: 0; /* Don't shrink */
-  height: fit-content;
-  max-height: calc(100vh - 140px);
-  position: sticky;
-  top: 20px;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateX(50px);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.preview-area.active {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-/* Phone Header */
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .preview-header {
   display: flex;
   justify-content: space-between;
@@ -746,146 +659,22 @@ body,
   background: rgba(255, 255, 255, 0.8);
   z-index: 9999;
 }
-<<<<<<< HEAD
-=======
-
-/* Only show modal on mobile screens */
-@media (max-width: 992px) {
-  .preview-modal {
-    display: flex;
-  }
-
-  .preview-area {
-    display: none !important;
-  }
-
-  .campaign-container {
-    flex-direction: column;
-  }
-
-  .campaign-container.preview-active {
-    flex-direction: column;
-  }
-}
-
-.preview-modal .preview-content {
-  background: white;
-  padding: 32px;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
-}
-
-.preview-modal h3 {
-  margin: 0 0 16px 0;
-  font-size: 20px;
-}
-
-.preview-message {
-  background: #f3f4f6;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.preview-message p {
-  margin: 0 0 8px 0;
-}
-
-.preview-message em {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.loading-numbers {
-  padding: 12px 16px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  color: #6b7280;
-  font-style: italic;
-  font-size: 14px;
-}
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 .disabled-input {
   background: #f9fafb !important;
   color: #9ca3af !important;
   cursor: not-allowed !important;
 }
 
-<<<<<<< HEAD
 /* Responsive tweaks */
 @media (max-width: 1200px) {
   .preview-area { width: 350px; }
-=======
-/* Mobile and tablet adjustments */
-@media (max-width: 1200px) {
-  .campaign-container.preview-active {
-    gap: 20px;
-  }
-
-  .preview-area {
-    width: 320px;
-  }
-}
-
-@media (max-width: 992px) {
-  .campaign-container {
-    gap: 15px;
-    padding: 15px;
-  }
-
-  .campaign-container.preview-active {
-    gap: 15px;
-  }
-
-  .preview-area {
-    width: 280px;
-    padding: 15px;
-    max-height: calc(100vh - 120px);
-  }
-
-  .preview-messages {
-    min-height: 200px;
-    max-height: 250px;
-  }
-
-  /* Keep modal as backup for very small screens */
-  .preview-modal {
-    display: none;
-  }
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 }
 @media (max-width: 768px) {
-<<<<<<< HEAD
-=======
-  .campaign-container {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  /* On very small screens, stack vertically but keep sidebar preview */
-  .campaign-container.preview-active {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .preview-area {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    position: relative;
-    top: 0;
-  }
-
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
   .form-field-row,
   .schedule-inputs {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-<<<<<<< HEAD
   .form-field label { padding-top: 0; }
   .form-actions { flex-direction: column; }
   .btn-primary,
@@ -894,42 +683,6 @@ body,
   .upload-content-wrapper { flex-direction: column; gap: 15px; }
   .file-upload-area-new { height: 150px; padding: 20px 15px; }
   .uploaded-files-section { height: auto; max-height: 150px; }
-=======
-
-  .form-field label {
-    padding-top: 0;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    width: 100%;
-  }
-
-  /* Mobile upload adjustments */
-  .upload-container {
-    height: auto;
-    min-height: 250px;
-  }
-
-  .upload-content-wrapper {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .file-upload-area-new {
-    height: 150px;
-    padding: 20px 15px;
-  }
-
-  .uploaded-files-section {
-    height: auto;
-    max-height: 150px;
-  }
->>>>>>> ca658c87b2368432b4f8d00cd1669d3e020f85c6
 }
 
 /* Only show modal on very small screens (phones in portrait) */

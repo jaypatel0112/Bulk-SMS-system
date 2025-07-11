@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import TopNavbar from '../components/TopNavbar';
@@ -118,8 +118,9 @@ const AssignNumber = () => {
   return (
     <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} />
+      <TopNavbar customTitle="Assign Twilio Number" />
       <div className="dashboard-main-assign" ref={mainContentRef}>
-        <TopNavbar customTitle="Assign Twilio Number" />
+        
         <div className="assign-container">
           <div className="assign-content">
             {/* Left Column - Assign Form */}
