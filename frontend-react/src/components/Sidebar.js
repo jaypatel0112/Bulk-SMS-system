@@ -48,8 +48,19 @@ const Sidebar = ({ email }) => {
 
   // Highlight selected menu based on path
   useEffect(() => {
-    if (location.pathname.includes('campaign')) {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts[0] === 'dashboard') {
+      setSelectedBox('Dashboard');
+    } else if (
+      pathParts[0] === 'campaign' &&
+      pathParts.length === 2 // e.g., /campaign/[email]
+    ) {
       setSelectedBox('Create Campaign');
+    } else if (
+      pathParts[0] === 'campaign' &&
+      pathParts.length > 2 // e.g., /campaign/[email]/[campaignId]
+    ) {
+      setSelectedBox('Dashboard'); // or another label if you want
     } else if (location.pathname.includes('inbox')) {
       setSelectedBox('Inbox');
     } else if (location.pathname.includes('assign-number')) {
@@ -58,6 +69,7 @@ const Sidebar = ({ email }) => {
       setSelectedBox('Dashboard');
     }
   }, [location.pathname]);
+  
 
   // Navigation handler
   const handleBoxClick = (path) => {
