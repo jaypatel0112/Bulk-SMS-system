@@ -245,11 +245,10 @@ const CampaignDetails = () => {
     <div className="campaign-details-layout">
       {/* Sidebar on the left */}
       <Sidebar email={decodeURIComponent(email)} />
-
+      <div className="main-content-area">
+        <TopNavbar customTitle="Campaign Detail" />
       {/* Main content on the right */}
         <div className="campaign-container">
-          {/* Global Header - Similar to Dashboard */}
-          <TopNavbar />
 
           {/* Campaign Details Header */}
           <div className="campaign-details-header">
@@ -473,6 +472,7 @@ const CampaignDetails = () => {
             </div>
           </div>
         </div>
+      </div>
     </div>
   );
 };
