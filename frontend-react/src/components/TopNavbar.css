@@ -1,19 +1,27 @@
 .top-navbar {
   position: fixed;
   top: 0;
-  left: 14.375%; /* Align right next to sidebar */
+  left: 14.375%; /* Adjust this if sidebar width changes */
   right: 0;
   height: 70px;
   background-color: #ffffff;
   border-bottom: 1px solid #ddd;
   z-index: 1000;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
+
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   font-family: 'Montserrat', sans-serif;
+
+  /* Ensure it doesn't shrink below height */
+  min-height: 70px;
+  max-height: 70px;
+  width: calc(100% - 14.375%);
 }
+
 
 .navbar-content {
   display: flex;

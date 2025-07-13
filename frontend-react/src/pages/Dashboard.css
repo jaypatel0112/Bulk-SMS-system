@@ -1,5 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
 
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
 :root {
   --sidebar-width: 240px;
   --header-height: 100px;
@@ -12,10 +17,38 @@
   --container-max-width: 1150px;
 }
 
+.dashboard-main {
+  width: calc(100% - 14.375%);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: #f8f9fa;
+  box-sizing: border-box;
+  z-index: 1;
+  position: relative;
+  overflow: hidden; /* prevent double scrollbars */
+}
+
+/* --- TOP NAVBAR --- */
+.top-navbar {
+  width: 100%;
+  height: 70px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  position: relative; /* not sticky/fixed unless needed */
+  z-index: 1000;
+  /* Remove left/right properties unless absolutely needed */
+}
+
+
 /* --- SIDEBAR LAYOUT --- */
 .dashboard-container {
   display: flex;
-  min-height: 100vh;
+  min-height: 0;
   width: 100vw;
   background-color: #F9FAFB;
   font-family: "Montserrat", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
@@ -37,19 +70,7 @@
   overflow-y: auto;
 }
 
-/* --- TOP NAVBAR --- */
-.top-navbar {
-  position: fixed;
-  top: 0;
-  left: var(--sidebar-width);
-  right: 0;
-  height: var(--header-height);
-  z-index: 200;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  display: flex;
-  align-items: center;
-}
+
 @media (max-width: 900px) {
   .top-navbar {
     left: 0;
@@ -57,23 +78,7 @@
   }
 }
 
-/* --- MAIN CONTENT --- */
-.dashboard-main {
-  margin-top: var(--header-height);
-  flex: 1 1 0;
-  min-width: 0;
-  background: #f8f9fa;
-  min-height: calc(100vh - var(--header-height));
-  height: calc(100vh - var(--header-height));
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  min-height: 0;
-}
+
 @media (max-width: 900px) {
   .sidebar {
     position: relative;
@@ -88,9 +93,7 @@
   }
   .dashboard-main {
     margin-left: 0;
-    margin-top: var(--header-height);
     width: 100vw;
-    min-height: calc(100vh - var(--header-height));
     height: calc(100vh - var(--header-height));
   }
   .dashboard-container {
@@ -99,6 +102,20 @@
 }
 
 /* --- SECTION CONTAINERS --- */
+.dashboard-main-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 20px; /* 10px padding left/right */
+  /* Optionally add padding-top/bottom as needed */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+  box-sizing: border-box;
+  z-index: 1;
+  position: relative;
+  overflow: hidden; /* prevent double scrollbars */
+}
 
 /* Message Statistics: fixed height, does not stretch */
 .stats-section-new {
@@ -117,7 +134,6 @@
   min-height: 80px;
   max-height: 520px;
   flex: 0 0 auto;
-
 }
 
 /* User Management and Campaigns: stretch to fill */
@@ -137,7 +153,8 @@
   flex: 1 1 0;
   min-height: 0;
   max-height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 @media (max-width: 1400px) {

@@ -14,6 +14,18 @@ body {
   height: 100vh;
   background: #f8fafc;
 }
+.top-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* This pushes navbar-content left, navbar-actions right */
+  height: 80px;
+  background: #fff;
+  padding: 0 24px;
+  border-bottom: 1px solid #e2e8f0;
+  position: flex;
+  top: 0;
+  z-index: 10;
+}
 
 .dashboard-wrapper {
   display: flex;
@@ -27,19 +39,6 @@ body {
   bottom: 0;
   margin: 0;           /* Ensure no margin */
   padding: 0;
-}
-
-.top-navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* This pushes navbar-content left, navbar-actions right */
-  height: 80px;
-  background: #fff;
-  padding: 0 24px;
-  border-bottom: 1px solid #e2e8f0;
-  position: flex;
-  top: 0;
-  z-index: 10;
 }
 
 .navbar-content {
@@ -56,7 +55,6 @@ body {
 /* Updated main container to work with TopNavbar */
 .inbox-dashboard-main {
   flex: 1;
-  padding-top: 80px; /* Space for TopNavbar */
   min-height: 100vh;
   background: #f8fafc;
   overflow: hidden;

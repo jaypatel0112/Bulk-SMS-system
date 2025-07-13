@@ -118,9 +118,9 @@ const AssignNumber = () => {
   return (
     <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} />
-      <TopNavbar customTitle="Assign Twilio Number" />
+      
       <div className="dashboard-main-assign" ref={mainContentRef}>
-        
+      <TopNavbar customTitle="Assign Twilio Number" />
         <div className="assign-container">
           <div className="assign-content">
             {/* Left Column - Assign Form */}

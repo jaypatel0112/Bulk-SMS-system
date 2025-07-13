@@ -356,9 +356,9 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <Sidebar email={decodeURIComponent(email)} role={role} />
-      <TopNavbar customTitle={topNavbarTitle} />
-
       <div className="dashboard-main">
+      <TopNavbar customTitle={topNavbarTitle} />
+      <div className="dashboard-main-content">
         {/* ADMIN MAIN DASHBOARD */}
         {role === 1 && !selectedUser && (
           <>
@@ -436,6 +436,7 @@ const Dashboard = () => {
         {((role === 2) || (role === 1 && selectedUser)) && (
           <UserDashboardView userEmail={selectedUser || decodeURIComponent(email)} />
         )}
+      </div>
       </div>
     </div>
   )
