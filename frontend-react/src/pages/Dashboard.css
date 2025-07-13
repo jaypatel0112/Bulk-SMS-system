@@ -1,9 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
 
 html, body {
+  height: 100%;
+  min-height: 0;
   margin: 0;
   padding: 0;
 }
+
 
 :root {
   --sidebar-width: 240px;
@@ -105,16 +108,16 @@ html, body {
 .dashboard-main-content {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0 20px; /* 10px padding left/right */
-  /* Optionally add padding-top/bottom as needed */
-  height: 100vh;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
   background-color: #f8f9fa;
   box-sizing: border-box;
   z-index: 1;
   position: relative;
-  overflow: hidden; /* prevent double scrollbars */
+  overflow: hidden;
+  /* REMOVE THIS LINE: */
+  /* height: 100vh; */
 }
 
 /* Message Statistics: fixed height, does not stretch */

@@ -118,11 +118,7 @@ const Sidebar = ({ email }) => {
             </Box>
           ))}
         </Box>
-        {currentEmail && (
-          <Box sx={{ mt: 2, textAlign: 'center', color: '#888', fontSize: '0.95em' }}>
-            <span>👤 {currentEmail}</span>
-          </Box>
-        )}
+        
       </Box>
     </Box>
   );

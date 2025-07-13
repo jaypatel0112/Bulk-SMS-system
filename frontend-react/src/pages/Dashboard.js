@@ -356,88 +356,88 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <Sidebar email={decodeURIComponent(email)} role={role} />
-      <div className="dashboard-main">
-      <TopNavbar customTitle={topNavbarTitle} />
-      <div className="dashboard-main-content">
-        {/* ADMIN MAIN DASHBOARD */}
-        {role === 1 && !selectedUser && (
-          <>
-            <MessageStatistics
-              sentMessages={sentMessages}
-              incomingMessages={incomingMessages}
-              optOuts={optOuts}
-              timeFilter={timeFilter}
-              setTimeFilter={setTimeFilter}
-            />
-            <div className="user-management-section">
-              <h2>User Management</h2>
-              <div className="users-container">
-                {users.length > 0 ? (
-                  <div className="users-grid">
-                    {users.map((user) => {
-                      const initials = getInitials(user.email)
-                      return (
-                        <div
-                          key={user.user_id}
-                          className={`user-card ${user.isAdmin ? "admin" : ""}`}
-                          onClick={() => handleUserClick(user.email)}
-                        >
-                          <div className="user-header">
-                            <div
-                              className="user-avatar"
-                              style={getAvatarClass(initials)}
-                            >
-                              {initials}
+        <div className="dashboard-main">
+        <TopNavbar customTitle={topNavbarTitle} />
+        <div className="dashboard-main-content">
+          {/* ADMIN MAIN DASHBOARD */}
+          {role === 1 && !selectedUser && (
+            <>
+              <MessageStatistics
+                sentMessages={sentMessages}
+                incomingMessages={incomingMessages}
+                optOuts={optOuts}
+                timeFilter={timeFilter}
+                setTimeFilter={setTimeFilter}
+              />
+              <div className="user-management-section">
+                <h2>User Management</h2>
+                <div className="users-container">
+                  {users.length > 0 ? (
+                    <div className="users-grid">
+                      {users.map((user) => {
+                        const initials = getInitials(user.email)
+                        return (
+                          <div
+                            key={user.user_id}
+                            className={`user-card ${user.isAdmin ? "admin" : ""}`}
+                            onClick={() => handleUserClick(user.email)}
+                          >
+                            <div className="user-header">
+                              <div
+                                className="user-avatar"
+                                style={getAvatarClass(initials)}
+                              >
+                                {initials}
+                              </div>
+                              <div className="user-role">
+                                {user.isAdmin ? "Administrator" : "Standard User"}
+                              </div>
                             </div>
-                            <div className="user-role">
-                              {user.isAdmin ? "Administrator" : "Standard User"}
+                            <div className="user-info">
+                              <h3 title={user.email}>{user.email}</h3>
                             </div>
+                            {user.isAdmin ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate("/login")
+                                }}
+                                className="user-button logout-button"
+                              >
+                                Log Out
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteUser(user.email)
+                                }}
+                                disabled={deletingUser === user.email}
+                                className="user-button delete-button"
+                              >
+                                {deletingUser === user.email ? "Deleting..." : "Delete"}
+                              </button>
+                            )}
                           </div>
-                          <div className="user-info">
-                            <h3 title={user.email}>{user.email}</h3>
-                          </div>
-                          {user.isAdmin ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                navigate("/login")
-                              }}
-                              className="user-button logout-button"
-                            >
-                              Log Out
-                            </button>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteUser(user.email)
-                              }}
-                              disabled={deletingUser === user.email}
-                              className="user-button delete-button"
-                            >
-                              {deletingUser === user.email ? "Deleting..." : "Delete"}
-                            </button>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="empty-state">
-                    <h3>No users found</h3>
-                  </div>
-                )}
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <h3>No users found</h3>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {/* USER DASHBOARD (for role 2, or admin viewing a user) */}
-        {((role === 2) || (role === 1 && selectedUser)) && (
-          <UserDashboardView userEmail={selectedUser || decodeURIComponent(email)} />
-        )}
-      </div>
-      </div>
+          {/* USER DASHBOARD (for role 2, or admin viewing a user) */}
+          {((role === 2) || (role === 1 && selectedUser)) && (
+            <UserDashboardView userEmail={selectedUser || decodeURIComponent(email)} />
+          )}
+        </div>
+        </div>
     </div>
   )
 }
