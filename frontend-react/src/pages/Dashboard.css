@@ -124,7 +124,7 @@ html, body {
 .stats-section-new {
   width: 100%;
   max-width: var(--container-max-width);
-  margin: 25px auto;
+  margin: 5px auto;
   padding: 32px;
   background: white;
   border-radius: 16px;
@@ -306,7 +306,7 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 10px;
 }
 .stats-header-new h2 {
   margin: 0;
