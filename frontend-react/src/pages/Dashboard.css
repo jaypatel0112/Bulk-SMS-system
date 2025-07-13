@@ -326,7 +326,6 @@ html, body {
 .stats-grid-new {
   flex: 1 1 auto; /* Fills available space in .stats-section-new */
   min-height: 100px; /* Always shows at least one row */
-  overflow-y: auto;  /* Scrolls only if content overflows */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
