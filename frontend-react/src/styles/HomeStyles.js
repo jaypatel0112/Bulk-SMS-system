@@ -17,13 +17,17 @@ const useHomeStyles = makeStyles((theme) => ({
     // Update the leftDiv style:
     leftDiv: {
         width: '14.375%',
+        minWidth: '240px',
+        height: '100vh',
+        left: 0,
+        top: 0,
         backgroundColor: '#FFFFFF',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
-        position: 'relative', // Add this
+        borderRight: '1px solid #e5e7eb',
+        zIndex: 100,
+        overflow: 'hidden',
     },
-
     customScrollbar: {
         position: 'absolute',
         top: '15.5%', // adjust based on design

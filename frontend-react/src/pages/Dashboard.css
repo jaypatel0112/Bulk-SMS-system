@@ -63,10 +63,7 @@ html, body {
   top: 0;
   left: 0;
   width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
-  max-width: var(--sidebar-width);
-  min-height: 100vh;
-  height: 100vh;
+  height: 100%; /* Use 100% instead of 100vh */
   background: #fff;
   border-right: 1px solid #e5e7eb;
   z-index: 100;
