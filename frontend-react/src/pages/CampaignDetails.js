@@ -4,10 +4,9 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import card1 from '../bgImages/Card_1.png';
 import card2 from '../bgImages/Card_2.png';
 import card3 from '../bgImages/Card_3.png';
-import Sidebar from "../components/Sidebar"; // <-- Adjusted import path
-import TopNavbar from '../components/TopNavbar';
 import "./CampaignDetails.css";
-
+import Sidebar from "./Sidebar";
+import TopNavbar from './TopNavbar';
 
 const CampaignDetails = () => {
   const { email } = useParams()
@@ -33,13 +32,12 @@ const CampaignDetails = () => {
   });
   const contactsPerPage = 50;
   const statusTypeToBg = {
-  delivered: card2,
-  failed: card3,
-  queued: card1,
-  replied: card2, // or whichever image you want for replies
-  total: card1,
-};
-
+    delivered: card2,
+    failed: card3,
+    queued: card1,
+    replied: card2,
+    total: card1,
+  };
 
   const getEmailFromPath = () => {
     const pathParts = location.pathname.split('/');
@@ -69,7 +67,7 @@ const CampaignDetails = () => {
       console.error("Error fetching campaign:", err);
       setError(err.response?.data?.error || err.message || "Failed to load campaign");
       if (err.message.includes("permission")) {
-        navigate('/dashboard');
+        navigate('/bulksms/dashboard');
       }
     } finally {
       setLoading(false);
@@ -93,7 +91,6 @@ const CampaignDetails = () => {
       }
     }
 
-    // Fetch replies count
     try {
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/campaign/replies-count/${id}`
@@ -205,20 +202,18 @@ const CampaignDetails = () => {
     }, 30000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line
   }, [id, location.pathname]);
 
   if (loading) {
-  return (
-    <div className="loading-container">
-      <div className="loading-center-content">
-        <div className="spinner"></div>
-        <p>Loading campaign details...</p>
+    return (
+      <div className="loading-container">
+        <div className="loading-center-content">
+          <div className="spinner"></div>
+          <p>Loading campaign details...</p>
+        </div>
       </div>
-    </div>
-  );
-}
-
+    );
+  }
 
   if (error) {
     return (
@@ -227,7 +222,7 @@ const CampaignDetails = () => {
           <h3>Error Loading Campaign</h3>
           <p>{error}</p>
           <button onClick={() => window.location.reload()}>Retry</button>
-          <button onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
+          <button onClick={() => navigate('/bulksms/dashboard')}>Back to Dashboard</button>
         </div>
       </div>
     );
@@ -242,15 +237,11 @@ const CampaignDetails = () => {
   );
 
   return (
-    <div className="campaign-details-layout">
-      {/* Sidebar on the left */}
+    <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} />
-      <div className="main-content-area">
+      <div className="inbox-dashboard-main">
         <TopNavbar customTitle="Campaign Detail" />
-      {/* Main content on the right */}
         <div className="campaign-container">
-
-          {/* Campaign Details Header */}
           <div className="campaign-details-header">
             <div className="header-content">
               <div className="title-section">
@@ -263,9 +254,7 @@ const CampaignDetails = () => {
                 ← Back
               </button>
             </div>
-          
 
-            {/* Modal for status numbers */}
             {statusNumbers.type && (
               <div className="status-numbers-modal">
                 <div className="status-numbers-content"
@@ -317,9 +306,8 @@ const CampaignDetails = () => {
                 </div>
               </div>
             )}
-            {/* Tabs Wrapper */}
+
             <div className="tabs-wrapper">
-              {/* Tabs */}
               <div className="tabs">
                 <button
                   className={activeTab === "overview" ? "active" : ""}
@@ -335,7 +323,6 @@ const CampaignDetails = () => {
                 </button>
               </div>
 
-              {/* Tab Content */}
               <div className="tab-content">
                 {activeTab === "overview" && (
                   <div className="overview-container">
@@ -465,7 +452,6 @@ const CampaignDetails = () => {
                         </button>
                       </div>
                     )}
-
                   </div>
                 )}
               </div>

@@ -1,9 +1,9 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import TopNavbar from '../components/TopNavbar';
 import './Inbox.css';
+import Sidebar from './Sidebar';
+import TopNavbar from './TopNavbar';
 
 const API_URL = process.env.REACT_APP_API_URL;
 const optOutKeywords = ["stop", "stopall", "unsubscribe", "cancel", "quit", "end"];
@@ -253,7 +253,7 @@ const Inbox = () => {
         } else {
           setUserRole("user");
           const numbersResponse = await axios.get(
-            `${process.env.REACT_APP_API_URL}/api/twilio-numbers/user-numbers/${encodeURIComponent(email)}`,
+            `${process.env.REACT_APP_API_URL}/api/twilionumber/user-numbers/${encodeURIComponent(email)}`,
             { params: { email } },
           );
           let numbers = [];

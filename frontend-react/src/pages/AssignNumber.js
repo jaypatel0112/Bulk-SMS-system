@@ -1,9 +1,9 @@
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import TopNavbar from '../components/TopNavbar';
 import './AssignNumber.css';
+import Sidebar from './Sidebar';
+import TopNavbar from './TopNavbar';
 
 const AssignNumber = () => {
   const { email } = useParams();

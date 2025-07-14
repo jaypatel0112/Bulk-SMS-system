@@ -42,23 +42,53 @@
   background: #f8fafc;
 }
 
-/* Sidebar: fixed on the left, always visible */
+/* Updated Sidebar styling to match Inbox */
 .campaign-details-layout > .sidebar,
 .campaign-details-layout > div.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 240px;
-  height: 100vh;
+  flex: 0 0 24vw;
+  min-width: 220px;
+  max-width: 400px;
   background: #fff;
-  border-right: 1px solid #eee;
-  z-index: 101;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.sidebar-header {
+  width: 100%;
+  padding: 24px 20px 20px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  border-top-left-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0e1e53;
+  letter-spacing: -0.02em;
 }
 
 /* Main content: starts after sidebar, never overlapped */
 .campaign-container {
-  height: calc(100vh - 70px);
+  height: calc(100vh - 70px); /* Take remaining space below TopNavbar */
   min-height: 0;
+  max-height: calc(100vh - 70px); /* Prevent overflowing screen */
+  overflow-y: auto;               /* Enable scroll only if needed */
+  overflow-x: hidden;
+
   background: #f8fafc;
   display: flex;
   flex-direction: column;
@@ -67,12 +97,10 @@
   padding: 20px 24px;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;           /* <-- This centers the container horizontally */
+  margin: 0 auto;
   border-radius: 0 24px 24px 0;
-  overflow-x: hidden;
   position: relative;
 }
-
 
 
 /* Responsive: sidebar stacks on top, content fills screen */
@@ -427,7 +455,7 @@
   padding: 24px;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin: 20px 0;
+  margin: 0px 0;
 }
 .overview-content {
   display: grid;

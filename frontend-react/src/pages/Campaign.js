@@ -6,9 +6,9 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import * as XLSX from "xlsx"
-import Sidebar from "../components/Sidebar"
-import TopNavbar from "../components/TopNavbar"
 import "./Campaign.css"
+import Sidebar from "./Sidebar"
+import TopNavbar from "./TopNavbar"
 
 const Campaign = () => {
   const { email } = useParams()

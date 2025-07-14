@@ -1,11 +1,11 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import AssignNumber from './pages/AssignNumber';
 import Campaign from './pages/Campaign';
 import CampaignDetails from './pages/CampaignDetails';
+import Dashboard from './pages/Dashboard';
 import Inbox from './pages/Inbox';
-import Signup from './pages/Signup';
 import Login from './pages/Login';
-import AssignNumber from './pages/AssignNumber'
+import Signup from './pages/Signup';
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
         
         {/* Campaign routes with email parameter */}
         <Route path="/campaign/:email" element={<Campaign />} />
-        <Route path="/campaign/:email/:id" element={<CampaignDetails />} />
+        <Route path="bulksms/campaign/:email/:id" element={<CampaignDetails />} />
         <Route path="/assign-number/:email" element={<AssignNumber />} />
         <Route path="/inbox/:email" element={<Inbox />} /><Route path="/inbox/:email" element={<Inbox />} />
         

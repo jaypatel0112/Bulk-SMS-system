@@ -7,9 +7,9 @@ import "react-toastify/dist/ReactToastify.css"
 import inbox from "../bgImages/icons/direct-inbox.png"
 import SentIcon from "../bgImages/icons/send-2.png"
 import notification from "../bgImages/icons/sms-notification.png"
-import Sidebar from "../components/Sidebar"
-import TopNavbar from "../components/TopNavbar"
 import "./Dashboard.css"
+import Sidebar from "./Sidebar"
+import TopNavbar from "./TopNavbar"
 
 const MessageStatistics = ({
   sentMessages,
@@ -48,7 +48,7 @@ const MessageStatistics = ({
           <div className="stat-value-new">{incomingMessages.toLocaleString()}</div>
         </div>
         <div className="stat-icon-new">
-          <img src={notification} alt="Sent" className="stat-icon-img" />
+          <img src={inbox} alt="Sent" className="stat-icon-img" />
         </div>
       </div>
       <div className="stat-card-new users-opted-out stat-bg-3">
@@ -57,7 +57,7 @@ const MessageStatistics = ({
           <div className="stat-value-new">{optOuts.toLocaleString()}</div>
         </div>
         <div className="stat-icon-new">
-          <img src={inbox} alt="Sent" className="stat-icon-img" />
+          <img src={notification} alt="Sent" className="stat-icon-img" />
         </div>
       </div>
     </div>
@@ -103,7 +103,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!email) {
-      navigate("/login")
+      navigate("/bulksms/login")
       return
     }
 
@@ -158,7 +158,7 @@ const Dashboard = () => {
           err.response?.data?.error || err.message || "Failed to load data"
         )
         if (err.response?.status === 401) {
-          navigate("/login")
+          navigate("/bulksms/login")
         }
       } finally {
         setLoading(false)
@@ -251,7 +251,6 @@ const Dashboard = () => {
           <p>Loading...</p>
         </div>
       </div>
-
     )
   }
 
@@ -316,7 +315,7 @@ const Dashboard = () => {
                 <div
                   key={campaign.id}
                   className="campaign-card-new"
-                  onClick={() => navigate(`/campaign/${encodeURIComponent(userEmail)}/${campaign.id}`)}
+                  onClick={() => navigate(`/bulksms/campaign/${encodeURIComponent(userEmail)}/${campaign.id}`)}
                 >
                   <div className="campaign-header-new">
                     <h3>{campaign.campaign_name || "Unnamed Campaign"}</h3>
@@ -341,7 +340,7 @@ const Dashboard = () => {
             <div className="empty-state">
               <h3>No campaigns found</h3>
               <button
-                onClick={() => navigate(`/campaign/${encodeURIComponent(userEmail)}`)}
+                onClick={() => navigate(`/bulksms/campaign/${encodeURIComponent(userEmail)}`)}
                 className="create-button"
               >
                 Create New Campaign
@@ -354,9 +353,9 @@ const Dashboard = () => {
   )
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-wrapper">
       <Sidebar email={decodeURIComponent(email)} role={role} />
-        <div className="dashboard-main">
+      <div className="dashboard-main">
         <TopNavbar customTitle={topNavbarTitle} />
         <div className="dashboard-main-content">
           {/* ADMIN MAIN DASHBOARD */}
@@ -400,7 +399,7 @@ const Dashboard = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  navigate("/login")
+                                  navigate("/bulksms/login")
                                 }}
                                 className="user-button logout-button"
                               >
@@ -437,7 +436,7 @@ const Dashboard = () => {
             <UserDashboardView userEmail={selectedUser || decodeURIComponent(email)} />
           )}
         </div>
-        </div>
+      </div>
     </div>
   )
 }
