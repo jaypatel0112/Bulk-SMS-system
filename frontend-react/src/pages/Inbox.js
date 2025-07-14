@@ -127,7 +127,19 @@ const Inbox = () => {
       }
   
       const decodedEmail = decodeURIComponent(email);
-      const url = `${API_URL}/api/inbox/${decodedEmail}${cursorArg ? `?cursor=${encodeURIComponent(cursorArg)}` : ''}`;
+  
+      // Construct URL with query parameters
+      let url = `${API_URL}/api/inbox/${decodedEmail}`;
+      const queryParams = [];
+      
+
+  
+      if (cursorArg) queryParams.push(`cursor=${encodeURIComponent(cursorArg)}`);
+      if (filter === "unread") queryParams.push("filter=unread");
+  
+      if (queryParams.length > 0) {
+        url += `?${queryParams.join("&")}`;
+      }
   
       const response = await axios.get(url);
       const data = response.data;
@@ -135,31 +147,30 @@ const Inbox = () => {
       const receivedConversations = Array.isArray(data?.conversations) 
         ? data.conversations 
         : Array.isArray(data) ? data : [];
-  
+      console.log("Fetching URL:", url);
       if (loadMore) {
         // Combine old + new
         const combined = [...conversationsRef.current, ...receivedConversations];
-
+  
         // Remove duplicates by unique key
         const uniqueMap = new Map();
         combined.forEach(conv => {
           const key = `${conv.id}-${conv.twilio_number}-${conv.contact_phone}`;
           uniqueMap.set(key, conv);
         });
-
+  
         // Convert map to array and sort by last_message_at descending
         let uniqueList = Array.from(uniqueMap.values()).sort((a, b) =>
           new Date(b.last_message_at) - new Date(a.last_message_at)
         );
-
+  
         // Trim the oldest if exceeding limit (e.g., max 100)
         const MAX_CONVERSATIONS = 100;
         if (uniqueList.length > MAX_CONVERSATIONS) {
           uniqueList = uniqueList.slice(0, MAX_CONVERSATIONS);
         }
-
+  
         setConversations(uniqueList);
-
       } else {
         setConversations(receivedConversations);
       }
@@ -178,7 +189,8 @@ const Inbox = () => {
         setLoading(false);
       }
     }
-  }, [email, hasMore, isFetchingMore, API_URL]);
+  }, [email, hasMore, isFetchingMore, filter]);
+  
   
   
 
@@ -295,6 +307,12 @@ const Inbox = () => {
     });
   }, [selectedConversation?.twilio_number, selectedConversation?.contact_phone]);
   
+  useEffect(() => {
+    setCursor(null);
+    setHasMore(true);
+    fetchConversations(false, null);
+  }, [filter]);
+  
   
   
   
@@ -397,13 +415,26 @@ const Inbox = () => {
                   >
                     Unread
                   </button>
-                  <select className="conversation-dropdown" onChange={(e) => {
-                    setSortOption(e.target.value);
-                    localStorage.setItem("inboxSortOption", e.target.value);
-                  }} value={sortOption}>
+                  <select
+                    className="conversation-dropdown"
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      setSortOption(selected);
+                      localStorage.setItem("inboxSortOption", selected);
+
+                      // 👇 Add this to make it affect the inbox
+                      if (selected === "unread") {
+                        setFilter("unread");
+                      } else {
+                        setFilter("all");
+                      }
+                    }}
+                    value={sortOption}
+                  >
                     <option value="newest">Newest</option>
                     <option value="unread">Unread</option>
                   </select>
+
                 </div>
               </div>
 
