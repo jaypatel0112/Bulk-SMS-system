@@ -11,16 +11,15 @@ function getNameFromEmail(email) {
     .join(' ');
 }
 
-const TopNavbar = ({ customTitle }) => {
+const TopNavbar = ({ customTitle, rightContent }) => {
   const location = useLocation();
-  const { email } = useParams(); // <-- Get email from route
+  const { email } = useParams();
 
-  // Determine title based on prop or route
   const getTitle = () => {
     if (customTitle) return customTitle;
     if (location.pathname.includes('/create-campaign')) return 'Create Campaign';
     if (location.pathname.includes('/campaign-details')) return 'Campaign Management';
-    return 'Campaign Management'; // Default
+    return 'Campaign Management';
   };
 
   const userName = getNameFromEmail(email);
@@ -29,12 +28,16 @@ const TopNavbar = ({ customTitle }) => {
     <div className="top-navbar">
       <div className="navbar-content">
         <h1>{getTitle()}</h1>
-        <p>
-          Hello{userName ? `, ${userName}` : ''} welcome back!
-        </p>
+        <p>Hello{userName ? `, ${userName}` : ''} welcome back!</p>
+      </div>
+
+      {/* Render the right side content (e.g. your button) */}
+      <div className="navbar-right">
+        {rightContent}
       </div>
     </div>
   );
 };
+
 
 export default TopNavbar;
