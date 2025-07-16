@@ -60,7 +60,7 @@ const Sidebar = ({ email }) => {
       pathParts[0] === 'campaign' &&
       pathParts.length > 2 // e.g., /campaign/[email]/[campaignId]
     ) {
-      setSelectedBox('Dashboard'); // or another label if you want
+      setSelectedBox('Create Campaign'); // or another label if you want
     } else if (location.pathname.includes('inbox')) {
       setSelectedBox('Inbox');
     } else if (location.pathname.includes('assign-number')) {

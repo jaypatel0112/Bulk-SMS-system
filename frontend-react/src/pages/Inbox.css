@@ -74,6 +74,7 @@ body {
   overflow: hidden;
   max-height: 100%;
   padding: 20px 25px 25px 25px; /* Add padding for consistent spacing */
+  flex-wrap: nowrap;
 }
 
 .header-messages {
@@ -211,9 +212,19 @@ body {
 .filter-controls {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap; /* Allows wrapping if absolutely necessary */
   gap: 12px;
-  flex-wrap: wrap;
   margin-top: 4px;
+  width: 100%;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 /* Search Container with Icon */
@@ -949,7 +960,7 @@ body {
 
   .inbox-chat {
     min-width: 0;
-    height: 60%;
+    height: 40%;
     border-radius: 0 0 20px 20px;
   }
 
@@ -990,3 +1001,21 @@ body {
     margin: 20px;
   }
 }
+
+@media (max-width: 600px) {
+  .inbox-sidebar {
+    flex: 1 1 100%;
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 0;
+  }
+}
+@media (max-width: 790px) {
+  .inbox-chat {
+    flex: 1 1 100%;
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
+

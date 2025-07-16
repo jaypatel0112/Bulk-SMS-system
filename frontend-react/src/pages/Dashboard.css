@@ -43,16 +43,15 @@ body {
 
 .dashboard-main-content {
   flex: 1 1 0;
-  min-height: 0;
-  padding: 20px 25px 25px 25px;
   display: flex;
   flex-direction: column;
-  background-color: #f8f9fa;
-  box-sizing: border-box;
-  z-index: 1;
-  position: relative;
+  min-height: 0;
   overflow: hidden;
+  background-color: #f8f9fa;
+  padding: 20px 25px;
+  box-sizing: border-box;
 }
+
 
 /* Stats Section */
 .stats-section-new {
@@ -67,9 +66,6 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: 29vh;
-  min-height: 120px;
-  max-height: 520px;
   flex: 0 0 auto;
   overflow-y: auto;
   overflow-x: hidden;
@@ -333,7 +329,6 @@ body {
   justify-content: space-between;
   align-items: center;
   max-width: 100%;
-  margin-top: 25px;
 }
 
 .user-profile-left {

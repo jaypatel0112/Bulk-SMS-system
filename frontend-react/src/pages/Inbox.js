@@ -406,36 +406,39 @@ const Inbox = () => {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
-                  <button className={`pill-btn${filter === "all" ? " active" : ""}`} onClick={() => setFilter("all")}>
-                    All
-                  </button>
-                  <button
-                    className={`pill-btn${filter === "unread" ? " active" : ""}`}
-                    onClick={() => setFilter("unread")}
-                  >
-                    Unread
-                  </button>
-                  <select
-                    className="conversation-dropdown"
-                    onChange={(e) => {
-                      const selected = e.target.value;
-                      setSortOption(selected);
-                      localStorage.setItem("inboxSortOption", selected);
 
-                      // 👇 Add this to make it affect the inbox
-                      if (selected === "unread") {
-                        setFilter("unread");
-                      } else {
-                        setFilter("all");
-                      }
-                    }}
-                    value={sortOption}
-                  >
-                    <option value="newest">Newest</option>
-                    <option value="unread">Unread</option>
-                  </select>
+                  <div className="filter-actions">
+                    <button
+                      className={`pill-btn${filter === "all" ? " active" : ""}`}
+                      onClick={() => setFilter("all")}
+                    >
+                      All
+                    </button>
 
+                    <button
+                      className={`pill-btn${filter === "unread" ? " active" : ""}`}
+                      onClick={() => setFilter("unread")}
+                    >
+                      Unread
+                    </button>
+
+                    <select
+                      className="conversation-dropdown"
+                      onChange={(e) => {
+                        const selected = e.target.value;
+                        setSortOption(selected);
+                        localStorage.setItem("inboxSortOption", selected);
+
+                        setFilter(selected === "unread" ? "unread" : "all");
+                      }}
+                      value={sortOption}
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="unread">Unread</option>
+                    </select>
+                  </div>
                 </div>
+
               </div>
 
               {filteredConversations.length === 0 ? (
