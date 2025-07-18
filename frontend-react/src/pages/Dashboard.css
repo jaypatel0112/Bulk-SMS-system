@@ -46,10 +46,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
   background-color: #f8f9fa;
   padding: 20px 25px;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 
@@ -70,6 +70,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
 
 .stats-header-new {
   display: flex;
@@ -142,6 +143,7 @@ body {
   justify-content: center;
   color: #002294;
 }
+
 
 /* User Management Section */
 .user-management-section,
@@ -606,12 +608,47 @@ body {
   display: block;
 }
 
-/* Responsive Grids */
 @media (max-width: 1200px) {
-  .stats-grid-new,
+  /* Stats: horizontal scroll strip */
+  .stats-grid-new {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stat-card-new {
+    flex: 0 0 clamp(200px, 45vw, 260px);
+    scroll-snap-align: start;
+  }
+
+  /* Users & Campaigns: 2-column responsive grids */
   .users-grid,
   .campaigns-grid-new {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .stats-grid-new {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stat-card-new {
+    flex: 0 0 clamp(200px, 70vw, 260px);
+    scroll-snap-align: start;
   }
 }
 
@@ -628,24 +665,38 @@ body {
     padding: 16px;
   }
   
-  .stats-section-new {
-    height: 120px;
-    min-height: 120px;
-    max-height: 160px;
+  .stats-grid-new {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
+  }
+
+  .stat-card-new {
+    flex: 0 0 250px;
   }
 }
 
 @media (max-width: 600px) {
+  .dashboard-main-content {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .user-profile-section,
   .stats-section-new,
   .user-management-section,
   .campaigns-section-new {
+    flex: 1 1 auto;
     padding: 8px;
+    overflow-y: visible; /* Allow full height content without cut-off */
   }
   
-  .stats-section-new {
-    height: 100px;
-    min-height: 100px;
-    max-height: 120px;
+  .stats-grid-new {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
   }
   
   .dashboard-main-content {

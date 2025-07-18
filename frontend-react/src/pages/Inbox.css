@@ -938,7 +938,7 @@ body {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .dashboard-content-wrapper {
     padding: 15px;
   }

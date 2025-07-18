@@ -315,7 +315,7 @@ const Dashboard = () => {
                 <div
                   key={campaign.id}
                   className="campaign-card-new"
-                  onClick={() => navigate(`/bulksms/campaign/${encodeURIComponent(userEmail)}/${campaign.id}`)}
+                  onClick={() => navigate(`/bulksms/campaign/${encodeURIComponent(email)}/${campaign.id}`)}
                 >
                   <div className="campaign-header-new">
                     <h3>{campaign.campaign_name || "Unnamed Campaign"}</h3>

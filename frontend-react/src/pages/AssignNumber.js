@@ -218,27 +218,6 @@ const AssignNumber = () => {
           </div>
         </div>
       </div>
-      {window.innerWidth <= 1024 && (
-        <div className="tabbar-bottom">
-          <button className="tabbar-item">
-            <span className="tabbar-icon">🏠</span>
-            <span>Home</span>
-          </button>
-          <button className="tabbar-item active">
-            <span className="tabbar-icon">📱</span>
-            <span>Numbers</span>
-          </button>
-          <button className="tabbar-item">
-            <span className="tabbar-icon">👥</span>
-            <span>Users</span>
-          </button>
-          <button className="tabbar-item">
-            <span className="tabbar-icon">⚙️</span>
-            <span>Settings</span>
-          </button>
-        </div>
-      )}
-      {loading && <div className="loading-overlay">Processing...</div>}
     </div>
   );
 };
